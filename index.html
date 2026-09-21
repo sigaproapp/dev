@@ -3995,7 +3995,57 @@
             });
         }
 
-        function requestTaskNotifications() { }
+        function requestTaskNotifications() {
+            if (!('Notification' in window)) {
+                showToast('Seu navegador não suporta notificações.', 'error');
+                return false;
+            }
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') {
+                showToast('Notificações bloqueadas. Habilite em configurações do navegador.', 'error');
+                return false;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showToast('Notificações de tarefas ativadas.');
+                    navigator.vibrate?.([120, 60, 120]);
+                    return true;
+                }
+                showToast('Notificações desativadas; o aviso seguirá apenas no app.', 'info');
+                return false;
+            }).catch(() => showToast('Não foi possível ativar as notificações.', 'error'));
+            return false;
+        }
+
+        function triggerTaskNotification(task) {
+            const title = 'Lembrete de tarefa';
+            const body = `${task.title} · ${formatTaskTime(task.time)}`;
+            const options = {
+                body,
+                tag: `task-${task.id}-${task.date}-${task.time}`,
+                renotify: true,
+                requireInteraction: true,
+                silent: false
+            };
+            if (document.visibilityState !== 'visible') {
+                navigator.vibrate?.([200, 80, 200]);
+            }
+            try {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(title, options).catch(() => {
+                            if ('Notification' in window && Notification.permission === 'granted') new Notification(title, options);
+                        });
+                    });
+                }
+                if ('Notification' in window && Notification.permission === 'granted' && !navigator.serviceWorker?.controller) {
+                    new Notification(title, options);
+                }
+            } catch (error) {
+                console.warn('Falha ao disparar notificação da tarefa:', error);
+            }
+            showToast(`Tarefa às ${formatTaskTime(task.time)}: ${task.title}`);
+        }
 
         function checkTaskNotifications() {
             const now = new Date();
@@ -4004,10 +4054,10 @@
             const sentKey = scopedKey('siga-notificacoes-enviadas');
             let sent = {};
             try { sent = JSON.parse(localStorage.getItem(sentKey)) || {}; } catch (error) { sent = {}; }
-            getTasks().filter(task => !task.completed && task.time === currentTime).forEach(task => {
-                const notificationKey = `${today}-${task.id}`;
+            getTasks().filter(task => !task.completed && task.date === today && task.time === currentTime).forEach(task => {
+                const notificationKey = `${today}-${task.id}-${task.time}`;
                 if (sent[notificationKey]) return;
-                showToast(`Tarefa às ${formatTaskTime(task.time)}: ${task.title}`);
+                triggerTaskNotification(task);
                 sent[notificationKey] = true;
             });
             localStorage.setItem(sentKey, JSON.stringify(sent));

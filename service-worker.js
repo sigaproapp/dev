@@ -25,3 +25,17 @@ self.addEventListener('fetch', event => {
             .catch(() => caches.match(event.request).then(response => response || caches.match('./index.html')))
     );
 });
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    const url = './';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            if (clientList.length > 0) {
+                const firstClient = clientList[0];
+                return firstClient.focus();
+            }
+            return clients.openWindow(url);
+        })
+    );
+});
