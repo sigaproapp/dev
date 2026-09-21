@@ -1223,11 +1223,27 @@
         function showToast(message, type = 'info') {
             const toast = document.getElementById('site-toast');
             if (!toast) return;
-            toast.textContent = message;
-            toast.className = `rounded-xl px-4 py-3 text-xs font-bold text-white shadow-xl ${type === 'error' ? 'bg-red-600' : 'bg-slate-800'}`;
+            const palette = {
+                info: { shell: 'bg-slate-900/95 border border-white/10', accent: 'bg-indigo-500', icon: 'i data-lucide="bell-ring" class="h-4 w-4"' },
+                error: { shell: 'bg-red-600/95 border border-red-300/40', accent: 'bg-red-200', icon: 'i data-lucide="alert-triangle" class="h-4 w-4"' },
+                success: { shell: 'bg-emerald-600/95 border border-emerald-300/40', accent: 'bg-emerald-200', icon: 'i data-lucide="check-circle-2" class="h-4 w-4"' }
+            }[type] || { shell: 'bg-slate-900/95 border border-white/10', accent: 'bg-indigo-500', icon: 'i data-lucide="bell-ring" class="h-4 w-4"' };
+            toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${palette.accent} text-slate-900">
+                        <${palette.icon}>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-white/70">Lembrete</p>
+                        <p class="mt-1 text-xs font-bold text-white leading-5">${escapeHtml(message)}</p>
+                    </div>
+                </div>
+            `;
+            toast.className = `rounded-2xl px-3 py-3 text-white shadow-[0_18px_38px_rgba(15,23,42,0.35)] backdrop-blur-md ${palette.shell}`;
             toast.style.display = 'block';
             window.clearTimeout(showToast.timer);
             showToast.timer = window.setTimeout(() => { toast.style.display = 'none'; }, 4500);
+            window.lucide?.createIcons();
         }
 
         let activeSiteDialog = null;
@@ -4017,19 +4033,48 @@
             return false;
         }
 
+        function playSystemNotificationTone() {
+            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextCtor) return;
+            try {
+                const context = new AudioContextCtor();
+                const oscillator = context.createOscillator();
+                const gain = context.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.14);
+                gain.gain.setValueAtTime(0.0001, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.38);
+                oscillator.connect(gain);
+                gain.connect(context.destination);
+                oscillator.start();
+                oscillator.stop(context.currentTime + 0.4);
+                oscillator.onended = () => context.close();
+            } catch (error) {
+                console.warn('Falha ao reproduzir som da notificação:', error);
+            }
+        }
+
         function triggerTaskNotification(task) {
             const title = 'Lembrete de tarefa';
             const body = `${task.title} · ${formatTaskTime(task.time)}`;
+            const iconData = `data:image/svg+xml;charset=utf-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><rect width="256" height="256" rx="56" fill="url(#g)"/><path d="M82 78h92v18H82zm0 42h92v18H82zm0 42h64v18H82z" fill="white"/><circle cx="174" cy="177" r="26" fill="#fbbf24"/></svg>')}`;
             const options = {
                 body,
+                icon: iconData,
+                badge: iconData,
                 tag: `task-${task.id}-${task.date}-${task.time}`,
                 renotify: true,
                 requireInteraction: true,
-                silent: false
+                silent: false,
+                vibrate: [200, 80, 200],
+                sound: 'default'
             };
             if (document.visibilityState !== 'visible') {
                 navigator.vibrate?.([200, 80, 200]);
             }
+            playSystemNotificationTone();
             try {
                 if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                     navigator.serviceWorker.ready.then(registration => {
