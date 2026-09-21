@@ -162,6 +162,12 @@ create table if not exists public.metas (
     prata numeric(12,2) not null default 0,
     ouro numeric(12,2) not null default 0,
     diamante numeric(12,2) not null default 0,
+    mes_referencia date not null default current_date,
+    mensal_bronze numeric(12,2) not null default 0,
+    mensal_prata numeric(12,2) not null default 0,
+    mensal_ouro numeric(12,2) not null default 0,
+    mensal_diamante numeric(12,2) not null default 0,
+    meta_mensal numeric(12,2) not null default 0,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
@@ -183,9 +189,23 @@ alter table public.metas
 alter table public.metas
     add column if not exists diamante numeric(12,2) default 0;
 alter table public.metas
+    add column if not exists mes_referencia date default current_date;
+alter table public.metas
+    add column if not exists mensal_bronze numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_prata numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_ouro numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_diamante numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists meta_mensal numeric(12,2) default 0;
+alter table public.metas
     add column if not exists created_at timestamptz default now();
 alter table public.metas
     add column if not exists updated_at timestamptz default now();
+
+create index if not exists metas_loja_vendedor_mes_idx on public.metas (loja_id, vendedor_id, mes_referencia);
 
 grant select, insert, update, delete on public.metas to anon, authenticated;
 alter table public.metas enable row level security;
