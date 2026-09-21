@@ -1426,6 +1426,19 @@
             return Number(text.includes(',') ? text.replace(/\./g, '').replace(',', '.') : text) || 0;
         }
 
+        function formatBrazilianDecimalInput(value) {
+            const sanitized = String(value ?? '').replace(/[^\d,]/g, '');
+            if (!sanitized) return '';
+            const hasComma = sanitized.includes(',');
+            const [integerPart, decimalPartRaw] = sanitized.split(',');
+            const integerDigits = (integerPart || '').replace(/\./g, '').replace(/\D/g, '');
+            if (!integerDigits) return '';
+            const formattedInteger = integerDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            if (!hasComma) return formattedInteger;
+            const decimalDigits = (decimalPartRaw || '').replace(/\D/g, '').slice(0, 2);
+            return `${formattedInteger},${decimalDigits}`;
+        }
+
         function slugify(text) {
             return String(text || '').toLowerCase().trim()
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -1451,7 +1464,7 @@
                 input.addEventListener('blur', () => formatMoneyInput(input));
             });
             document.querySelectorAll('[data-decimal-input]').forEach(input => input.addEventListener('input', () => {
-                input.value = input.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
+                input.value = formatBrazilianDecimalInput(input.value);
             }));
         }
 
@@ -2752,7 +2765,7 @@
             document.getElementById('weekly-goal-percent-total').textContent = 'Valores por faixa';
             document.querySelectorAll('[data-weekly-tier]').forEach(input => {
                 input.addEventListener('input', () => {
-                    input.value = input.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
+                    input.value = formatBrazilianDecimalInput(input.value);
                 });
             });
         }
