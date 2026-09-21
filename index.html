@@ -1612,8 +1612,8 @@
             const normalized = String(value ?? '').trim().toLowerCase();
             if (!normalized) return '';
             const compact = normalized.normalize('NFD').replace(/[^a-z]/g, '');
-            if (compact === 'gerente') return 'gerente';
-            if (compact === 'vendedor') return 'vendedor';
+            if (compact === 'gerente' || compact === 'manager') return 'gerente';
+            if (compact === 'vendedor' || compact === 'seller') return 'vendedor';
             return normalized;
         }
 
@@ -1634,7 +1634,15 @@
             } catch (error) { return null; }
         }
         function saveSession(session) { localStorage.setItem(sessionStorageName, JSON.stringify({ ...session, role: normalizeUserRole(session?.role) })); }
-        function clearSession() { localStorage.removeItem(sessionStorageName); sigaSupabase.auth.signOut(); }
+        function clearSession() {
+            try {
+                localStorage.removeItem(sessionStorageName);
+                if (sigaSupabase?.auth?.signOut) sigaSupabase.auth.signOut().catch(() => {});
+            } catch (error) {
+                console.warn('Falha ao limpar a sessão:', error);
+            }
+            window.location.replace(window.location.pathname || '/');
+        }
 
         function effectiveUserId() {
             const session = getSession();
@@ -1786,8 +1794,18 @@
             bar.classList.remove('hidden');
             const vendors = getUsuarios().filter(item => item.lojaId === session.lojaId && item.role === 'vendedor');
             const vendorSelect = document.getElementById('manager-vendor-select');
-            vendorSelect.innerHTML = vendors.map(vendor => `<option value="${vendor.id}">${escapeHtml(vendor.name)}</option>`).join('');
-            vendorSelect.value = session.viewingUserId || vendors[0]?.id || '';
+            const openVendorButton = document.getElementById('manager-open-vendor-button');
+            if (!vendors.length) {
+                vendorSelect.innerHTML = '<option value="">Nenhum vendedor</option>';
+                vendorSelect.disabled = true;
+                openVendorButton.disabled = true;
+                vendorSelect.value = '';
+            } else {
+                vendorSelect.innerHTML = vendors.map(vendor => `<option value="${vendor.id}">${escapeHtml(vendor.name)}</option>`).join('');
+                vendorSelect.disabled = false;
+                openVendorButton.disabled = false;
+                vendorSelect.value = session.viewingUserId || vendors[0]?.id || '';
+            }
             const viewingVendor = vendors.find(vendor => vendor.id === session.viewingUserId);
             const inVendorPanel = Boolean(viewingVendor);
             document.getElementById('desktop-navigation').classList.toggle('hidden', !inVendorPanel);
