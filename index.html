@@ -1653,7 +1653,8 @@
             const inVendorPanel = Boolean(viewingVendor);
             document.getElementById('desktop-navigation').classList.toggle('hidden', !inVendorPanel);
             document.getElementById('mobile-navigation').classList.toggle('hidden', !inVendorPanel);
-            document.getElementById('fab-button').classList.toggle('hidden', !inVendorPanel);
+            const fabButton = document.getElementById('fab-button');
+            if (fabButton) fabButton.classList.remove('hidden');
             document.getElementById('manager-bar-label').textContent = inVendorPanel ? `Painel de: ${escapeHtml(viewingVendor.name)}` : `Loja: ${escapeHtml(getLojas().find(store => store.id === session.lojaId)?.name || '')}`;
         }
 
@@ -3163,8 +3164,8 @@
 
         async function askTaskScope(task, action) {
             if (!task.seriesId) return 'single';
-            const answer = await sitePrompt(`${action} esta tarefa somente neste dia ou todas as ocorrências futuras?\nDigite 1 para somente este dia ou 2 para todas as futuras.`, '1', `${action} tarefa recorrente`);
-            return answer === '2' ? 'series' : answer === '1' ? 'single' : null;
+            const choice = await siteChoice(`${action} esta tarefa recorrente?`, 'Só esta', 'Todas as futuras', `${action} tarefa recorrente`);
+            return choice === true ? 'single' : choice === false ? 'series' : null;
         }
 
         function isTaskOverdue(task) {
@@ -3326,6 +3327,8 @@
                 nav.classList.toggle('bg-indigo-50', index === pageIndex);
                 nav.classList.toggle('shadow-sm', index === pageIndex);
             });
+            const fabButton = document.getElementById('fab-button');
+            if (fabButton) fabButton.classList.toggle('hidden', pageName === 'training' || pageName === 'manager-training');
             updateNavigationNotifications();
 
             if (pageName === 'dashboard') {
@@ -4017,101 +4020,23 @@
         }
 
         function requestTaskNotifications() {
-            if (!('Notification' in window)) return false;
-            if (Notification.permission === 'granted') return true;
-            if (Notification.permission === 'denied') return false;
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    showToast('Notificações de tarefas ativadas.');
-                    navigator.vibrate?.([120, 60, 120]);
-                    return true;
-                }
-                return false;
-            }).catch(() => undefined);
             return false;
         }
 
         function playSystemNotificationTone() {
-            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContextCtor) return;
-            try {
-                const context = new AudioContextCtor();
-                const oscillator = context.createOscillator();
-                const gain = context.createGain();
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, context.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.14);
-                gain.gain.setValueAtTime(0.0001, context.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.38);
-                oscillator.connect(gain);
-                gain.connect(context.destination);
-                oscillator.start();
-                oscillator.stop(context.currentTime + 0.4);
-                oscillator.onended = () => context.close();
-            } catch (error) {
-                console.warn('Falha ao reproduzir som da notificação:', error);
-            }
+            return;
         }
 
         function triggerTaskNotification(task) {
-            const title = 'Lembrete de tarefa';
-            const body = `${task.title} · ${formatTaskTime(task.time)}`;
-            const iconData = `data:image/svg+xml;charset=utf-8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><rect width="256" height="256" rx="56" fill="url(#g)"/><path d="M82 78h92v18H82zm0 42h92v18H82zm0 42h64v18H82z" fill="white"/><circle cx="174" cy="177" r="26" fill="#fbbf24"/></svg>')}`;
-            const options = {
-                body,
-                icon: iconData,
-                badge: iconData,
-                tag: `task-${task.id}-${task.date}-${task.time}`,
-                renotify: true,
-                requireInteraction: true,
-                silent: false,
-                vibrate: [200, 80, 200],
-                sound: 'default'
-            };
-            if (document.visibilityState !== 'visible') {
-                navigator.vibrate?.([200, 80, 200]);
-            }
-            playSystemNotificationTone();
-            try {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification(title, options).catch(() => {
-                            if ('Notification' in window && Notification.permission === 'granted') new Notification(title, options);
-                        });
-                    });
-                }
-                if ('Notification' in window && Notification.permission === 'granted' && !navigator.serviceWorker?.controller) {
-                    new Notification(title, options);
-                }
-            } catch (error) {
-                console.warn('Falha ao disparar notificação da tarefa:', error);
-            }
-            showToast(`Tarefa às ${formatTaskTime(task.time)}: ${task.title}`);
+            return;
         }
 
         function checkTaskNotifications() {
-            const now = new Date();
-            const today = getLocalDateKey(now);
-            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const sentKey = scopedKey('siga-notificacoes-enviadas');
-            let sent = {};
-            try { sent = JSON.parse(localStorage.getItem(sentKey)) || {}; } catch (error) { sent = {}; }
-            getTasks().filter(task => !task.completed && task.date === today && task.time === currentTime).forEach(task => {
-                const notificationKey = `${today}-${task.id}-${task.time}`;
-                if (sent[notificationKey]) return;
-                triggerTaskNotification(task);
-                sent[notificationKey] = true;
-            });
-            localStorage.setItem(sentKey, JSON.stringify(sent));
+            return;
         }
 
         function initTaskNotifications() {
-            requestTaskNotifications();
-            checkTaskNotifications();
-            setupModalBackdropClose();
-            showPage('dashboard');
-            window.setInterval(checkTaskNotifications, 15000);
+            return;
         }
 
         function openNewTaskModal(selectedDate = null) {

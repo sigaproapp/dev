@@ -46,6 +46,8 @@
         if (globalShowPage) globalShowPage(pageId === 'training-page' ? 'training' : 'dashboard'); 
         document.querySelectorAll('main, section[id$="-page"]').forEach(element => element.classList.add('hidden')); 
         document.getElementById(pageId)?.classList.remove('hidden'); 
+        const fabButton = document.getElementById('fab-button');
+        if (fabButton) fabButton.classList.toggle('hidden', pageId === 'training-page' || pageId === 'manager-training-page');
         if (pageId === 'training-page') updateTrainingNavigation(); 
     }
 
@@ -280,20 +282,26 @@
     function renderTrainingRanking(period) {
         const target = document.getElementById('training-ranking'); if (!target) return;
         document.querySelectorAll('#training-page [data-ranking]').forEach(button => { const active = button.dataset.ranking === period; button.className = active ? 'training-period rounded-lg bg-white px-3 py-2 text-[10px] font-black text-rose-600 shadow-sm' : 'training-period rounded-lg px-3 py-2 text-[10px] font-black text-slate-500'; });
+
         const start = new Date();
         if (period === 'day') start.setHours(0, 0, 0, 0);
         else if (period === 'week') { start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (start.getDay() === 0 ? 6 : start.getDay() - 1)); }
         else { start.setDate(1); start.setHours(0, 0, 0, 0); }
 
-        const ranking = users().filter(user => user.lojaId === session().lojaId && user.role === 'vendedor').map(user => {
-            let total = 0;
-            try {
-                total = Object.values(JSON.parse(localStorage.getItem(`${KEY}-progresso::${user.id}`)) || {})
-                    .filter(item => item.completed && new Date(item.completedAt) >= start)
-                    .reduce((sum, item) => sum + Number(item.score || 0), 0);
-            } catch {}
-            return { ...user, total: Number(total) || 0 };
-        }).sort((first, second) => second.total - first.total || String(first.name).localeCompare(String(second.name), 'pt-BR')).slice(0, 3);
+        const ranking = users()
+            .filter(user => user.lojaId === session().lojaId && user.role === 'vendedor')
+            .map(user => {
+                let total = 0;
+                try {
+                    const saved = JSON.parse(localStorage.getItem(`${KEY}-progresso::${user.id}`)) || {};
+                    total = Object.values(saved)
+                        .filter(item => item.completed && item.completedAt && new Date(item.completedAt) >= start)
+                        .reduce((sum, item) => sum + Number(item.score || 0), 0);
+                } catch {}
+                return { ...user, total: Number(total) || 0 };
+            })
+            .sort((first, second) => second.total - first.total || String(first.name).localeCompare(String(second.name), 'pt-BR'))
+            .slice(0, 3);
 
         if (!ranking.length) {
             target.innerHTML = '<p class="w-full text-center text-xs font-semibold text-slate-400">Nenhum vendedor cadastrado.</p>';
@@ -312,7 +320,7 @@
             const [height, barColor, borderColor, numberSize] = colors[position] || ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'];
             const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
             const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
-            return `<div class="flex min-w-0 flex-1 flex-col items-center"><div class="relative"><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}</div><p class="mb-2 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p><div class="${height} flex w-full items-center justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}">${position}</div></div>`;
+            return `<div class="flex min-w-0 flex-1 flex-col items-center"><div class="relative"><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}</div><p class="mb-2 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p><div class="mb-1 text-[10px] font-black text-rose-600">${seller.total} acertos</div><div class="${height} flex w-full items-center justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}">${position}</div></div>`;
         }).join('')}</div>`;
         window.lucide?.createIcons();
     }
