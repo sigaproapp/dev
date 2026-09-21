@@ -4156,8 +4156,21 @@
                 closeProspectingCreateModal();
                 renderProspectingPage();
             });
+            function bindBackButtons() {
+                document.querySelectorAll('[data-back-dashboard]').forEach(button => {
+                    if (button.dataset.bound === 'true') return;
+                    button.dataset.bound = 'true';
+                    button.addEventListener('click', () => showPage('dashboard'));
+                });
+            }
+            document.addEventListener('click', event => {
+                const button = event.target.closest('[data-back-dashboard]');
+                if (!button) return;
+                event.preventDefault();
+                showPage('dashboard');
+            });
             document.querySelectorAll('[data-desktop-page]').forEach(button => button.addEventListener('click', () => showPage(button.dataset.desktopPage)));
-            document.querySelectorAll('[data-back-dashboard]').forEach(button => button.addEventListener('click', () => showPage('dashboard')));
+            bindBackButtons();
             document.getElementById('dashboard-sales-title').addEventListener('click', () => showPage('sales'));
             document.getElementById('dashboard-service-title').addEventListener('click', () => showPage('service'));
             document.getElementById('open-service-from-dashboard').addEventListener('click', () => showPage('service'));

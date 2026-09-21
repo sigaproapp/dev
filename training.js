@@ -134,6 +134,13 @@
         });
         const openSeller = () => { document.getElementById('fab-button')?.classList.add('hidden'); openPage('training-page'); renderList(); renderTrainingRanking('day'); };
         button.onclick = openSeller; desktopButton.onclick = openSeller; managerButton.onclick = () => { document.getElementById('fab-button')?.classList.add('hidden'); openPage('manager-training-page'); renderManager(); };
+        setTimeout(() => {
+            document.querySelectorAll('[data-back-dashboard]').forEach(button => {
+                if (button.dataset.bound === 'true') return;
+                button.dataset.bound = 'true';
+                button.addEventListener('click', () => window.showPage?.('dashboard'));
+            });
+        }, 0);
     }
 
     function enhanceTrainingForm() {
