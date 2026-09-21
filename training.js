@@ -155,7 +155,7 @@
         pdfUrl.insertAdjacentHTML('beforebegin', '<label class="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Arquivo PDF<input id="training-pdf-file" type="file" accept="application/pdf" class="mt-2 block w-full text-xs"></label>');
         mode.classList.add('hidden');
         values.classList.add('hidden');
-        values.insertAdjacentHTML('beforebegin', '<div class="rounded-xl border border-slate-200 p-3"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Dias disponíveis</p><input id="training-calendar-month" type="month" value="'+today().slice(0, 7)+'" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold outline-none"><div id="training-calendar" class="mt-2 grid grid-cols-7 gap-1"></div><label class="mt-2 flex items-center gap-2 text-[10px] font-bold text-slate-500"><input id="training-all-days" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-rose-600"> Todos os dias</label><div id="training-dates" class="mt-2 flex flex-wrap gap-1"></div></div>');
+        values.insertAdjacentHTML('beforebegin', '<div class="w-full rounded-xl border border-slate-200 bg-slate-50/80 p-3"><div class="mx-auto w-full max-w-[18rem]"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Dias disponíveis</p><input id="training-calendar-month" type="month" value="'+today().slice(0, 7)+'" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold outline-none"><div id="training-calendar" class="mt-2 grid w-full grid-cols-7 gap-1"></div><label class="mt-2 flex items-center gap-2 text-[10px] font-bold text-slate-500"><input id="training-all-days" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-rose-600"> Todos os dias</label><div id="training-dates" class="mt-2 flex flex-wrap gap-1"></div></div></div>');
         questions.classList.add('hidden');
         questions.insertAdjacentHTML('beforebegin', '<div class="rounded-xl border border-slate-200 p-3"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Perguntas</p><button id="training-add-question" type="button" class="rounded-xl bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-600">Adicionar pergunta</button></div><div id="training-manual-questions" class="mt-3 space-y-3"></div></div>');
         const dates = new Set();
@@ -175,12 +175,13 @@
             const firstDay = new Date(year, monthNumber - 1, 1);
             const totalDays = new Date(year, monthNumber, 0).getDate();
             const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            calendar.classList.add('w-full', 'mx-auto');
             calendar.innerHTML = labels.map(label => `<span class="py-1 text-center text-[9px] font-black text-slate-400">${label}</span>`).join('');
-            for (let index = 0; index < firstDay.getDay(); index += 1) calendar.insertAdjacentHTML('beforeend', '<span></span>');
+            for (let index = 0; index < firstDay.getDay(); index += 1) calendar.insertAdjacentHTML('beforeend', '<span class="h-8"></span>');
             for (let day = 1; day <= totalDays; day += 1) {
                 const dateKey = `${month}-${String(day).padStart(2, '0')}`;
                 const selected = dates.has(dateKey);
-                calendar.insertAdjacentHTML('beforeend', `<button type="button" data-training-date="${dateKey}" class="rounded-lg border px-1 py-2 text-[10px] font-black ${selected ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-slate-50 text-slate-500'}">${day}</button>`);
+                calendar.insertAdjacentHTML('beforeend', `<button type="button" data-training-date="${dateKey}" class="h-8 rounded-lg border px-1 text-[10px] font-black ${selected ? 'border-rose-500 bg-rose-500 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300'}">${day}</button>`);
             }
             document.getElementById('training-all-days').checked = dates.size === 0;
             renderDates();
