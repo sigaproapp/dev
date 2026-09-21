@@ -1223,6 +1223,11 @@
         function showToast(message, type = 'info') {
             const toast = document.getElementById('site-toast');
             if (!toast) return;
+            const key = `${type}:${message}`;
+            const now = Date.now();
+            if (showToast.lastKey === key && now - (showToast.lastTime || 0) < 4000) return;
+            showToast.lastKey = key;
+            showToast.lastTime = now;
             const palette = {
                 info: { shell: 'bg-slate-900/95 border border-white/10', accent: 'bg-indigo-500', icon: 'i data-lucide="bell-ring" class="h-4 w-4"' },
                 error: { shell: 'bg-red-600/95 border border-red-300/40', accent: 'bg-red-200', icon: 'i data-lucide="alert-triangle" class="h-4 w-4"' },
@@ -4012,24 +4017,17 @@
         }
 
         function requestTaskNotifications() {
-            if (!('Notification' in window)) {
-                showToast('Seu navegador não suporta notificações.', 'error');
-                return false;
-            }
+            if (!('Notification' in window)) return false;
             if (Notification.permission === 'granted') return true;
-            if (Notification.permission === 'denied') {
-                showToast('Notificações bloqueadas. Habilite em configurações do navegador.', 'error');
-                return false;
-            }
+            if (Notification.permission === 'denied') return false;
             Notification.requestPermission().then(permission => {
                 if (permission === 'granted') {
                     showToast('Notificações de tarefas ativadas.');
                     navigator.vibrate?.([120, 60, 120]);
                     return true;
                 }
-                showToast('Notificações desativadas; o aviso seguirá apenas no app.', 'info');
                 return false;
-            }).catch(() => showToast('Não foi possível ativar as notificações.', 'error'));
+            }).catch(() => undefined);
             return false;
         }
 

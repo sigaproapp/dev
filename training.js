@@ -286,7 +286,21 @@
         const barHeights = { 1: 96, 2: 72, 3: 56 };
         const colors = { 1: ['bg-yellow-400', 'border-yellow-400', 'text-3xl'], 2: ['bg-slate-300', 'border-slate-300', 'text-xl'], 3: ['bg-indigo-600', 'border-indigo-400', 'text-xl'] };
         const podium = ranking.length === 3 ? [ranking[1], ranking[0], ranking[2]] : ranking.length === 2 ? [ranking[1], ranking[0]] : ranking;
-        target.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:0.75rem;width:100%">${podium.map(seller => { const position = ranking.indexOf(seller) + 1; const [barColor, borderColor, numberSize] = colors[position] || ['bg-slate-300', 'border-slate-300', 'text-xl']; const height = barHeights[position] || 56; const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10'; const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : ''; return `<div style="min-width:0;display:flex;flex-direction:column;align-items:center"><div class="relative"><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}</div><p class="mb-1 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p><p class="mb-2 text-[10px] font-black text-rose-600">${seller.total} acertos</p><div class="flex w-full items-center justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}" style="height:${height}px">${position}</div></div>`; }).join('')}</div>`; window.lucide?.createIcons();
+        target.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:0.75rem;width:100%">${podium.map(seller => {
+            const position = ranking.indexOf(seller) + 1;
+            const [barColor, borderColor, numberSize] = colors[position] || ['bg-slate-300', 'border-slate-300', 'text-xl'];
+            const height = barHeights[position] || 56;
+            const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
+            const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
+            return `<div style="min-width:0;display:flex;flex-direction:column;align-items:center">
+                <div class="relative">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}
+                </div>
+                <p class="mb-1 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p>
+                <p class="mb-2 text-[10px] font-black text-rose-600">${seller.total} acertos</p>
+                <div class="flex w-full min-h-[56px] items-end justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}" style="height:${height}px; min-height:${height}px;">${position}</div>
+            </div>`;
+        }).join('')}</div>`; window.lucide?.createIcons();
     }
 
     function bindQuizInteractions() {
