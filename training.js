@@ -212,43 +212,69 @@
 
     function bindQuizInteractions() {
         const quiz = document.getElementById('training-quiz');
-        if (!quiz || quiz.dataset.boundQuiz) return;
-        quiz.dataset.boundQuiz = 'true';
-        quiz.addEventListener('click', async event => {
-            const target = event.target?.closest?.('[data-training-choice]');
-            const next = event.target?.closest?.('#training-next');
-            const release = event.target?.closest?.('#training-release');
-            if (!target && !next && !release) return;
+        if (!quiz) return;
+
+        const resolveTraining = () => {
             const title = document.getElementById('training-title-view')?.textContent;
-            const training = trainings().find(item => item.title === title);
-            if (!training) return;
-            const data = progress();
-            const state = data[training.id];
-            if (!state) return;
-            if (release) {
+            return trainings().find(item => item.title === title) || null;
+        };
+
+        quiz.querySelectorAll('[data-training-choice]').forEach(button => {
+            button.type = 'button';
+            button.onclick = async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const training = resolveTraining();
+                if (!training) return;
+                const data = progress();
+                const state = data[training.id];
+                if (!state || state.answers[state.index]) return;
+                const index = Number(button.dataset.trainingChoice);
+                const option = state.options?.[state.index]?.[index];
+                if (!option) return;
+                if (!await window.siteConfirm(`Você escolheu:\n${option.text}\n\nDeseja confirmar esta resposta?`)) return;
+                state.answers[state.index] = { selected: index, correct: option.correct };
+                option.correct ? state.score++ : state.errors++;
+                saveProgress(data);
+                renderQuestion(training, state);
+            };
+        });
+
+        const next = quiz.querySelector('#training-next');
+        if (next) {
+            next.type = 'button';
+            next.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const training = resolveTraining();
+                if (!training) return;
+                const data = progress();
+                const state = data[training.id];
+                if (!state || !state.answers[state.index]) return;
+                state.index++;
+                saveProgress(data);
+                renderQuestion(training, state);
+            };
+        }
+
+        const release = quiz.querySelector('#training-release');
+        if (release) {
+            release.type = 'button';
+            release.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                const training = resolveTraining();
+                if (!training) return;
+                const data = progress();
+                const state = data[training.id];
+                if (!state) return;
                 state.media = true;
                 state.mediaContent ||= {};
                 state.mediaContent.manual = true;
                 saveProgress(data);
                 renderQuestion(training, state);
-                return;
-            }
-            if (target && !state.answers[state.index]) {
-                const option = state.options[state.index][Number(target.dataset.trainingChoice)];
-                if (!option) return;
-                if (!await window.siteConfirm(`Você escolheu:\n${option.text}\n\nDeseja confirmar esta resposta?`)) return;
-                state.answers[state.index] = { selected: Number(target.dataset.trainingChoice), correct: option.correct };
-                option.correct ? state.score++ : state.errors++;
-                saveProgress(data);
-                renderQuestion(training, state);
-                return;
-            }
-            if (next) {
-                state.index++;
-                saveProgress(data);
-                renderQuestion(training, state);
-            }
-        });
+            };
+        }
     }
 
     function fillForm(item) { document.getElementById('training-editing-id').value = item.id; document.getElementById('training-module').value = item.moduleId; document.getElementById('training-title').value = item.title; document.getElementById('training-video-url').value = item.videoUrl || ''; document.getElementById('training-audio-url').value = item.audioUrl || ''; document.getElementById('training-pdf-url').value = item.pdfUrl || ''; document.getElementById('training-availability-mode').value = item.availability?.mode || 'all'; document.getElementById('training-available-values').value = (item.availability?.values || []).join(','); document.getElementById('training-questions-json').value = JSON.stringify(item.questions || [], null, 2); document.querySelectorAll('[data-training-vendor]').forEach(input => { input.checked = (item.vendorIds || []).includes(input.value); }); document.getElementById('training-cancel-edit').classList.remove('hidden'); document.getElementById('training-form').scrollIntoView({ behavior: 'smooth' }); }
