@@ -1221,34 +1221,7 @@
         }
 
         function showToast(message, type = 'info') {
-            const toast = document.getElementById('site-toast');
-            if (!toast) return;
-            const key = `${type}:${message}`;
-            const now = Date.now();
-            if (showToast.lastKey === key && now - (showToast.lastTime || 0) < 4000) return;
-            showToast.lastKey = key;
-            showToast.lastTime = now;
-            const palette = {
-                info: { shell: 'bg-slate-900/95 border border-white/10', accent: 'bg-indigo-500', icon: 'i data-lucide="bell-ring" class="h-4 w-4"' },
-                error: { shell: 'bg-red-600/95 border border-red-300/40', accent: 'bg-red-200', icon: 'i data-lucide="alert-triangle" class="h-4 w-4"' },
-                success: { shell: 'bg-emerald-600/95 border border-emerald-300/40', accent: 'bg-emerald-200', icon: 'i data-lucide="check-circle-2" class="h-4 w-4"' }
-            }[type] || { shell: 'bg-slate-900/95 border border-white/10', accent: 'bg-indigo-500', icon: 'i data-lucide="bell-ring" class="h-4 w-4"' };
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${palette.accent} text-slate-900">
-                        <${palette.icon}>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-white/70">Lembrete</p>
-                        <p class="mt-1 text-xs font-bold text-white leading-5">${escapeHtml(message)}</p>
-                    </div>
-                </div>
-            `;
-            toast.className = `rounded-2xl px-3 py-3 text-white shadow-[0_18px_38px_rgba(15,23,42,0.35)] backdrop-blur-md ${palette.shell}`;
-            toast.style.display = 'block';
-            window.clearTimeout(showToast.timer);
-            showToast.timer = window.setTimeout(() => { toast.style.display = 'none'; }, 4500);
-            window.lucide?.createIcons();
+            return;
         }
 
         let activeSiteDialog = null;
@@ -2118,8 +2091,8 @@
 
         async function askManagerTaskScope(task, action) {
             if (!task.seriesId) return 'single';
-            const answer = await sitePrompt(`${action} esta tarefa somente neste dia ou todas as ocorrências futuras?\nDigite 1 para somente este dia ou 2 para todas as futuras.`, '1', `${action} tarefa recorrente`);
-            return answer === '2' ? 'series' : answer === '1' ? 'single' : null;
+            const choice = await siteChoice(`${action} esta tarefa recorrente?`, 'Só esta', 'Todas as futuras', `${action} tarefa recorrente`);
+            return choice === true ? 'single' : choice === false ? 'series' : null;
         }
 
         function saveManagerTask(userId, taskId, changes, scope = 'single') {
