@@ -3017,7 +3017,8 @@
             const businessDays = countBusinessDays(weekStart, weekEnd);
             const elapsedEnd = today < weekEnd ? today : weekEnd;
             const elapsedDays = today < weekStart ? 0 : countBusinessDays(weekStart, elapsedEnd);
-            const remainingDays = today > weekEnd ? 0 : countBusinessDays(today < weekStart ? weekStart : today, weekEnd);
+            const daysIncludingToday = today > weekEnd ? 0 : countBusinessDays(today < weekStart ? weekStart : today, weekEnd);
+            const remainingDays = Math.max(0, daysIncludingToday - 1);
             const realizedSales = sales.filter(sale => sale.date >= weekStart && sale.date <= elapsedEnd);
             const realized = realizedSales.reduce((sum, sale) => sum + Number(sale.value || 0), 0);
             const originalDaily = businessDays ? weeklyTarget / businessDays : weeklyTarget;
@@ -3085,15 +3086,17 @@
             document.getElementById('falta-valor').textContent = money(Math.max(0, (target || data.target || 0) - data.total));
             document.getElementById('ticket-medio').innerHTML = `${money(data.ticketAverage)} <i data-lucide="trending-up" class="h-3 w-3"></i>`;
             const metrics = data.dailyMetrics;
-            const statusMessage = (target || data.target || 0) <= 0
+            const targetValue = target || data.target || 0;
+            const missingValue = Math.max(0, targetValue - data.total);
+            const statusMessage = targetValue <= 0
                 ? period === 'dia'
                     ? 'Nenhuma meta diária foi configurada para este vendedor.'
                     : 'Nenhuma meta semanal foi configurada para este vendedor.'
                 : metrics.remainingDays === 0
-                ? `${period === 'dia' ? 'Dia' : 'Semana'} encerrado: ${money(metrics.realized)} realizados de ${money(target || data.target || 0)}.`
-                : metrics.adjustedDaily > metrics.originalDaily
-                    ? `Abaixo do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`
-                    : `Acima do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`;
+                ? `${period === 'dia' ? 'Dia' : 'Semana'} encerrado: ${money(metrics.realized)} realizados de ${money(targetValue)}.`
+                : data.total < targetValue
+                ? `Abaixo do ritmo: meta original ${money(metrics.originalDaily)}. Faltam ${money(missingValue)} para atingir a meta do dia.`
+                : `Dentro do ritmo: meta original ${money(metrics.originalDaily)}. A meta diária do próximo dia permanece em ${money(metrics.originalDaily)}.`;
             document.getElementById('goal-status-message').textContent = statusMessage;
             document.getElementById('progress-fill').style.width = `${percent}%`;
             const badge = document.getElementById('badge-nivel');
