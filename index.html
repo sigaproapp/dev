@@ -3169,16 +3169,19 @@
         function taskStorageKey() { return scopedKey('siga-tarefas'); }
 
         function cleanupOldTasks() {
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - 7);
-            const cutoffKey = getLocalDateKey(cutoffDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const monthStartKey = getLocalDateKey(monthStart);
+            const monthEndKey = getLocalDateKey(monthEnd);
             const keys = Object.keys(localStorage).filter(key => key.startsWith('siga-tarefas::'));
             keys.forEach(key => {
                 try {
                     const tasks = JSON.parse(localStorage.getItem(key)) || [];
                     const filtered = Array.isArray(tasks) ? tasks.filter(task => {
-                        const taskDate = task.date || getLocalDateKey();
-                        return taskDate >= cutoffKey;
+                        const taskDate = String(task.date || getLocalDateKey()).slice(0, 10);
+                        return taskDate >= monthStartKey && taskDate <= monthEndKey;
                     }) : [];
                     localStorage.setItem(key, JSON.stringify(filtered));
                     if (Array.isArray(tasks)) syncStoredList(key, filtered, tasks.filter(task => !filtered.some(next => next.id === task.id)).map(task => task.id));
@@ -3190,6 +3193,9 @@
 
         function extendRecurringTaskHorizon(tasks) {
             if (!Array.isArray(tasks)) return tasks;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             const additions = [];
             const series = new Map();
             tasks.filter(task => task.seriesId && Array.isArray(task.repeatDays) && task.repeatDays.length).forEach(task => {
@@ -3200,9 +3206,9 @@
             const existing = new Set(tasks.map(task => `${task.seriesId || task.id}|${task.date}`));
             series.forEach(({ task, lastDate }) => {
                 const start = new Date(`${lastDate}T12:00:00`);
-                const end = new Date(start);
-                end.setDate(end.getDate() + 365);
-                for (const cursor = new Date(start.setDate(start.getDate() + 1)); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+                if (start > monthEnd) return;
+                const end = new Date(monthEnd);
+                for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
                     if (!task.repeatDays.includes(cursor.getDay())) continue;
                     const date = getLocalDateKey(cursor);
                     const key = `${task.seriesId}|${date}`;
@@ -3264,10 +3270,9 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             if (start < today) start.setTime(today.getTime());
-            const end = new Date(start);
-            end.setDate(end.getDate() + 365);
+            const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             const cursor = new Date(start);
-            for (; cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+            for (; cursor <= monthEnd; cursor.setDate(cursor.getDate() + 1)) {
                 if (!repeatDays.includes(cursor.getDay())) continue;
                 tasks.push({ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: getLocalDateKey(cursor), seriesId, repeatDays, lojaId: getSession()?.lojaId || null });
             }
