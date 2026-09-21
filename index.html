@@ -853,8 +853,22 @@
             return validStores.length === 1 ? validStores[0].id : null;
         }
 
+        function normalizeTaskAssignment(task, fallbackUserId = null) {
+            if (!task || typeof task !== 'object') return task;
+            const assignedUserId = task.userId || task.ownerId || task.vendedorId || task.responsavel_id || task.vendorId || fallbackUserId || null;
+            return {
+                ...task,
+                userId: task.userId || assignedUserId || null,
+                ownerId: task.ownerId || assignedUserId || null,
+                vendedorId: task.vendedorId || assignedUserId || null,
+                responsavel_id: task.responsavel_id || assignedUserId || null,
+                vendorId: task.vendorId || assignedUserId || null
+            };
+        }
+
         function databaseRowFromApp(table, item, scopedUserId = null) {
-            const userId = item.userId || item.ownerId || scopedUserId || effectiveUserId();
+            const normalizedTask = table === 'tarefas' ? normalizeTaskAssignment(item, scopedUserId) : item;
+            const userId = normalizedTask.userId || normalizedTask.ownerId || normalizedTask.vendedorId || normalizedTask.responsavel_id || normalizedTask.vendorId || scopedUserId || effectiveUserId();
             const lojaId = resolveStoreId(item.lojaId, userId);
             if (table === 'tarefas') return { id: item.id, loja_id: lojaId, titulo: item.title, horario: item.time, owner: item.owner || 'user', responsavel_id: userId, concluida: item.completed, observacao: item.observation || '', data: item.date, serie_id: item.seriesId || null, dias_repeticao: item.repeatDays || null };
             if (table === 'vendas') return { id: item.id, loja_id: getSession()?.lojaId || null, vendedor_id: userId, cliente: item.client || '', valor: item.value, data_hora: item.datetime || item.dateTime, produtos: item.products || [] };
@@ -1142,7 +1156,9 @@
                     const scopedTables = new Set(['tarefas', 'vendas', 'atendimentos', 'condicionais', 'vendas_loja']);
                     if (scopedTables.has(table)) {
                         const groups = sanitizedList.reduce((result, item) => {
-                            const scopeId = table === 'vendas_loja' ? item.lojaId : (item.userId || item.ownerId);
+                            const scopeId = table === 'vendas_loja'
+                                ? item.lojaId
+                                : (item.userId || item.ownerId || item.vendedorId || item.responsavel_id || item.vendorId || item.responsavelId);
                             if (scopeId) (result[scopeId] ||= []).push(item);
                             return result;
                         }, {});
@@ -2278,10 +2294,10 @@
 
         function createManagerRecurringTasks(userId, title, time, repeatDays) {
             const key = `siga-tarefas::${userId}`;
-            const current = readStoredList(key);
+            const current = readStoredList(key).map(task => normalizeTaskAssignment(task, userId));
             const existingKeys = new Set(current.filter(task => task.owner === 'manager' && task.title === title && task.time === time).map(task => `${task.date}|${task.title}|${task.time}`));
             const tasks = createRecurringTasks(title, time, getLocalDateKey(), repeatDays)
-                .map(task => ({
+                .map(task => normalizeTaskAssignment({
                     ...task,
                     owner: 'manager',
                     userId,
@@ -2289,7 +2305,7 @@
                     vendedorId: userId,
                     responsavel_id: userId,
                     vendorId: userId
-                }))
+                }, userId))
                 .filter(task => !existingKeys.has(`${task.date}|${task.title}|${task.time}`));
             if (!tasks.length) return;
             const updated = [...current, ...tasks];
@@ -3169,7 +3185,8 @@
 
         function taskOwnershipMatchesUser(task, userId) {
             if (!userId || !task) return false;
-            const candidates = [task.userId, task.ownerId, task.vendedorId, task.responsavel_id, task.vendorId];
+            const normalizedTask = normalizeTaskAssignment(task, userId);
+            const candidates = [normalizedTask.userId, normalizedTask.ownerId, normalizedTask.vendedorId, normalizedTask.responsavel_id, normalizedTask.vendorId, normalizedTask.responsavelId];
             return candidates.some(candidate => candidate === userId);
         }
 
@@ -3178,12 +3195,12 @@
             const userId = effectiveUserId();
             const storageKey = userId ? `siga-tarefas::${userId}` : taskStorageKey();
             try {
-                let savedTasks = JSON.parse(localStorage.getItem(storageKey)) || [];
+                let savedTasks = (JSON.parse(localStorage.getItem(storageKey)) || []).map(task => normalizeTaskAssignment(task, userId));
                 if (!Array.isArray(savedTasks)) savedTasks = [];
                 if (userId) {
                     const assignedByManager = Object.keys(localStorage)
                         .filter(key => key.startsWith('siga-tarefas::'))
-                        .flatMap(key => readStoredList(key))
+                        .flatMap(key => readStoredList(key).map(task => normalizeTaskAssignment(task, userId)))
                         .filter(task => taskOwnershipMatchesUser(task, userId));
                     savedTasks = mergeStoredLists(savedTasks, assignedByManager);
                 }
