@@ -2112,18 +2112,38 @@
                 const session = getSession();
                 const start = document.getElementById('weekly-goal-start').value;
                 const end = document.getElementById('weekly-goal-end').value;
-                const monthId = document.getElementById('weekly-goal-month-select').value;
-                const total = parseBrazilianNumber(document.getElementById('weekly-goal-total').value);
-                const distributions = Array.from(document.querySelectorAll('[data-weekly-vendor]')).map(input => ({ userId: input.dataset.weeklyVendor, percentage: parseBrazilianNumber(input.value || 0), value: total * parseBrazilianNumber(input.value || 0) / 100 }));
-                const percentTotal = distributions.reduce((sum, item) => sum + item.percentage, 0);
-                if (end < start || Math.abs(percentTotal - 100) > 0.01) return document.getElementById('goal-form-feedback').textContent = 'A soma das porcentagens dos vendedores deve ser exatamente 100%.';
-                const monthlyGoal = getMonthlyGoals().find(item => item.id === monthId);
-                if (!monthlyGoal || total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'O valor semanal não pode ser maior que a meta mensal.';
+                const monthId = document.getElementById('weekly-goal-month-select').value || '';
+                const name = document.getElementById('weekly-goal-name').value.trim();
+                const vendors = getUsuarios().filter(item => item.lojaId === session.lojaId && item.role === 'vendedor');
+                const distributions = vendors.map(user => {
+                    const values = Array.from(document.querySelectorAll(`[data-weekly-vendor="${user.id}"]`)).reduce((result, input) => {
+                        const tier = input.dataset.weeklyTier;
+                        const value = parseBrazilianNumber(input.value || 0);
+                        if (tier && value > 0) result[tier] = value;
+                        return result;
+                    }, {});
+                    if (!Object.keys(values).length) return null;
+                    const bronze = Number(values.bronze || 0);
+                    const silver = Number(values.silver || 0);
+                    const gold = Number(values.gold || 0);
+                    const diamond = Number(values.diamond || Math.max(gold, silver, bronze));
+                    const ordered = [bronze, silver, gold, diamond].filter(Boolean);
+                    if (!ordered.length) return null;
+                    if (ordered.some((value, index) => index > 0 && value < ordered[index - 1])) return { userId: user.id, invalid: true };
+                    return { userId: user.id, percentage: 100, value: diamond, bronze, silver, gold, diamond };
+                }).filter(Boolean);
+                const invalidVendor = distributions.find(item => item.invalid);
+                if (end < start) return document.getElementById('goal-form-feedback').textContent = 'A data final da semana não pode ser anterior à data inicial.';
+                if (!distributions.length) return document.getElementById('goal-form-feedback').textContent = 'Defina pelo menos um valor de meta para um vendedor.';
+                if (invalidVendor) return document.getElementById('goal-form-feedback').textContent = 'As metas por faixa devem seguir a ordem Bronze ≤ Prata ≤ Ouro ≤ Diamante.';
+                const total = distributions.reduce((sum, item) => sum + Number(item.value || 0), 0);
+                const monthlyGoal = monthId ? getMonthlyGoals().find(item => item.id === monthId) : null;
+                if (monthlyGoal && total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'O valor semanal não pode ser maior que a meta mensal.';
                 const weeklyGoals = getWeeklyGoals();
                 const existing = weeklyGoals.find(item => item.id === document.getElementById('weekly-goal-form').dataset.editingId);
-                const otherWeeksTotal = weeklyGoals.filter(item => item.monthlyGoalId === monthId && item.id !== existing?.id).reduce((sum, item) => sum + Number(item.total || 0), 0);
-                if (otherWeeksTotal + total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'A soma das semanas não pode ultrapassar a meta mensal.';
-                saveWeeklyGoals([...weeklyGoals.filter(item => item.id !== existing?.id), { id: existing?.id || crypto.randomUUID(), lojaId: session.lojaId, monthlyGoalId: monthId, name: document.getElementById('weekly-goal-name').value.trim(), weekStart: start, weekEnd: end, total, distributions }]);
+                const otherWeeksTotal = monthId ? weeklyGoals.filter(item => item.monthlyGoalId === monthId && item.id !== existing?.id).reduce((sum, item) => sum + Number(item.total || 0), 0) : 0;
+                if (monthlyGoal && otherWeeksTotal + total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'A soma das semanas não pode ultrapassar a meta mensal.';
+                saveWeeklyGoals([...weeklyGoals.filter(item => item.id !== existing?.id), { id: existing?.id || crypto.randomUUID(), lojaId: session.lojaId, monthlyGoalId: monthId || null, name: name || 'Semana', weekStart: start, weekEnd: end, total, distributions }]);
                 event.target.reset(); event.target.dataset.editingId = ''; renderGoalForm();
             });
             ['weekly-goal-month-select', 'weekly-goal-total'].forEach(id => document.getElementById(id).addEventListener('change', renderWeeklyVendors));
@@ -2684,13 +2704,26 @@
 
         function renderWeeklyVendors() {
             const session = getSession();
-            const total = parseBrazilianNumber(document.getElementById('weekly-goal-total').value || 0);
             const users = getUsuarios().filter(item => item.lojaId === session?.lojaId && item.role === 'vendedor');
-            const editing = getWeeklyGoals().find(item => item.id === document.getElementById('weekly-goal-form').dataset.editingId);
-            const saved = new Map((editing?.distributions || []).map(item => [item.userId, item.percentage]));
-            document.getElementById('weekly-goal-vendors').innerHTML = users.map(user => `<label class="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2 text-[10px] font-bold text-slate-600"><span class="min-w-0 flex-1 truncate">${escapeHtml(user.name)}</span><input type="text" inputmode="decimal" data-decimal-input data-weekly-vendor="${user.id}" value="${saved.get(user.id) || ''}" class="w-20 rounded-lg border border-slate-200 px-2 py-1 text-right outline-none"><span>%</span><output class="w-24 text-right text-indigo-600">${money(total * parseBrazilianNumber(saved.get(user.id) || 0) / 100)}</output></label>`).join('');
-            document.getElementById('weekly-goal-percent-total').textContent = `${Array.from(document.querySelectorAll('[data-weekly-vendor]')).reduce((sum, input) => sum + parseBrazilianNumber(input.value || 0), 0).toFixed(2)}%`;
-            document.querySelectorAll('[data-weekly-vendor]').forEach(input => input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1'); input.nextElementSibling.nextElementSibling.value = money(total * parseBrazilianNumber(input.value || 0) / 100); document.getElementById('weekly-goal-percent-total').textContent = `${Array.from(document.querySelectorAll('[data-weekly-vendor]')).reduce((sum, item) => sum + parseBrazilianNumber(item.value || 0), 0).toFixed(2)}%`; }));
+            const form = document.getElementById('weekly-goal-form');
+            const editing = getWeeklyGoals().find(item => item.id === form.dataset.editingId);
+            const saved = new Map((editing?.distributions || []).map(item => [item.userId, item]));
+            document.getElementById('weekly-goal-vendors').innerHTML = users.map(user => {
+                const values = saved.get(user.id) || {};
+                const tierInputs = [
+                    ['bronze', 'Bronze', values.bronze || ''],
+                    ['silver', 'Prata', values.silver || ''],
+                    ['gold', 'Ouro', values.gold || ''],
+                    ['diamond', 'Diamante', values.diamond || '']
+                ];
+                return `<label class="rounded-xl border border-slate-100 bg-slate-50 p-2 text-[10px] font-bold text-slate-600"><div class="mb-2 flex items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate">${escapeHtml(user.name)}</span><span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[8px] font-black uppercase text-indigo-600">Meta</span></div><div class="grid grid-cols-2 gap-2 sm:grid-cols-4">${tierInputs.map(([tier, label, value]) => `<div class="flex flex-col"><span class="mb-1 text-[8px] font-black uppercase tracking-wider text-slate-400">${label}</span><input type="text" inputmode="decimal" data-decimal-input data-weekly-tier="${tier}" data-weekly-vendor="${user.id}" value="${value}" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-right outline-none" placeholder="0"></div>`).join('')}</div></label>`;
+            }).join('');
+            document.getElementById('weekly-goal-percent-total').textContent = 'Valores por faixa';
+            document.querySelectorAll('[data-weekly-tier]').forEach(input => {
+                input.addEventListener('input', () => {
+                    input.value = input.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
+                });
+            });
         }
 
         function renderGoalsLists(lojaId) {
@@ -2699,7 +2732,7 @@
             const users = getUsuarios();
             const weeklyList = document.getElementById('weekly-goals-list');
             const monthlyList = document.getElementById('monthly-goals-list');
-            weeklyList.innerHTML = weeklyGoals.length ? weeklyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-start justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${escapeHtml(goal.name)}</p><p class="mt-1 text-[10px] font-semibold text-slate-500">${goal.weekStart} até ${goal.weekEnd} · ${money(goal.total)}</p><p class="mt-1 text-[10px] text-slate-400">${goal.distributions.map(item => `${escapeHtml(users.find(user => user.id === item.userId)?.name || 'Vendedor')}: ${item.percentage}% (${money(item.value)})`).join(' · ')}</p></div><div class="flex gap-1"><button type="button" data-edit-weekly-goal="${goal.id}" aria-label="Editar semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weekly-goal="${goal.id}" aria-label="Excluir semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma semana criada.</p>';
+            weeklyList.innerHTML = weeklyGoals.length ? weeklyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-start justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${escapeHtml(goal.name)}</p><p class="mt-1 text-[10px] font-semibold text-slate-500">${goal.weekStart} até ${goal.weekEnd} · ${money(goal.total)}</p><p class="mt-1 text-[10px] text-slate-400">${goal.distributions.map(item => `${escapeHtml(users.find(user => user.id === item.userId)?.name || 'Vendedor')}: Bronze ${money(item.bronze || 0)} · Prata ${money(item.silver || 0)} · Ouro ${money(item.gold || 0)} · Diamante ${money(item.diamond || item.value || 0)}`).join(' · ')}</p></div><div class="flex gap-1"><button type="button" data-edit-weekly-goal="${goal.id}" aria-label="Editar semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weekly-goal="${goal.id}" aria-label="Excluir semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma semana criada.</p>';
             monthlyList.innerHTML = monthlyGoals.length ? monthlyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-center justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${goal.month}</p><p class="mt-1 text-[10px] font-black text-indigo-600">${money(goal.total)}</p></div><button type="button" data-delete-monthly-goal="${goal.id}" aria-label="Excluir meta mensal" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma meta mensal criada.</p>';
             lucide.createIcons();
         }
@@ -2720,12 +2753,19 @@
 
         function configuredGoalValues(period, weekly, monthly, target, weekDays) {
             const userId = effectiveUserId();
+            const userDistribution = (weekly?.distributions || []).find(item => item.userId === userId) || {};
             const legacy = readStoredList('siga-metas').find(item => item.lojaId === getSession()?.lojaId && item.userId === userId && item.weekStart === weekly.weekStart);
             const weeklySource = weekly.bronze || weekly.silver || weekly.gold || weekly.diamond ? weekly : legacy;
             const monthlySource = monthly.bronze || monthly.silver || monthly.gold || monthly.diamond ? monthly : legacy;
             const source = period === 'mes' ? monthlySource : weeklySource;
             const prefix = period === 'mes' && source === legacy ? 'monthly' : '';
-            const readLevel = level => Number(source?.[prefix ? `${prefix}${level[0].toUpperCase()}${level.slice(1)}` : level] || 0);
+            const readLevel = level => {
+                const distributionValue = Number(userDistribution?.[level] || 0);
+                if (distributionValue > 0) return distributionValue;
+                const sourceValue = Number(source?.[prefix ? `${prefix}${level[0].toUpperCase()}${level.slice(1)}` : level] || 0);
+                if (sourceValue > 0) return sourceValue;
+                return 0;
+            };
             const divisor = period === 'dia' ? weekDays : 1;
             const values = {
                 bronze: readLevel('bronze') / divisor,
@@ -2733,7 +2773,7 @@
                 gold: readLevel('gold') / divisor,
                 diamond: readLevel('diamond') / divisor
             };
-            if (!values.diamond) values.diamond = target;
+            if (!values.diamond) values.diamond = Number(userDistribution.value || target || 0);
             if (!values.bronze && !values.silver && !values.gold) {
                 values.bronze = values.diamond * 0.25;
                 values.silver = values.diamond * 0.5;

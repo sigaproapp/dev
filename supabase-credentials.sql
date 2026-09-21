@@ -152,6 +152,135 @@ begin
     end if;
 end $$;
 
+create table if not exists public.metas (
+    id uuid primary key default gen_random_uuid(),
+    loja_id uuid not null references public.lojas(id) on delete cascade,
+    vendedor_id uuid not null references public.perfis(id) on delete cascade,
+    semana_inicio date not null,
+    semana_fim date not null,
+    bronze numeric(12,2) not null default 0,
+    prata numeric(12,2) not null default 0,
+    ouro numeric(12,2) not null default 0,
+    diamante numeric(12,2) not null default 0,
+    mes_referencia date,
+    mensal_bronze numeric(12,2) not null default 0,
+    mensal_prata numeric(12,2) not null default 0,
+    mensal_ouro numeric(12,2) not null default 0,
+    mensal_diamante numeric(12,2) not null default 0,
+    meta_mensal numeric(12,2) not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.metas
+    add column if not exists loja_id uuid;
+alter table public.metas
+    add column if not exists vendedor_id uuid;
+alter table public.metas
+    add column if not exists semana_inicio date;
+alter table public.metas
+    add column if not exists semana_fim date;
+alter table public.metas
+    add column if not exists bronze numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists prata numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists ouro numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists diamante numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mes_referencia date;
+alter table public.metas
+    add column if not exists mensal_bronze numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_prata numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_ouro numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists mensal_diamante numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists meta_mensal numeric(12,2) default 0;
+alter table public.metas
+    add column if not exists created_at timestamptz default now();
+alter table public.metas
+    add column if not exists updated_at timestamptz default now();
+
+grant select, insert, update, delete on public.metas to anon, authenticated;
+alter table public.metas enable row level security;
+drop policy if exists metas_anon_all on public.metas;
+create policy metas_anon_all
+    on public.metas for all to anon, authenticated
+    using (true)
+    with check (true);
+
+create table if not exists public.metas_mensais (
+    id uuid primary key default gen_random_uuid(),
+    loja_id uuid not null references public.lojas(id) on delete cascade,
+    mes_referencia date not null,
+    valor_total numeric(12,2) not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.metas_mensais
+    add column if not exists loja_id uuid;
+alter table public.metas_mensais
+    add column if not exists mes_referencia date;
+alter table public.metas_mensais
+    add column if not exists valor_total numeric(12,2) default 0;
+alter table public.metas_mensais
+    add column if not exists created_at timestamptz default now();
+alter table public.metas_mensais
+    add column if not exists updated_at timestamptz default now();
+
+grant select, insert, update, delete on public.metas_mensais to anon, authenticated;
+alter table public.metas_mensais enable row level security;
+drop policy if exists metas_mensais_anon_all on public.metas_mensais;
+create policy metas_mensais_anon_all
+    on public.metas_mensais for all to anon, authenticated
+    using (true)
+    with check (true);
+
+create table if not exists public.metas_semanais (
+    id uuid primary key default gen_random_uuid(),
+    loja_id uuid not null references public.lojas(id) on delete cascade,
+    meta_mensal_id uuid references public.metas_mensais(id) on delete set null,
+    nome text not null default '',
+    semana_inicio date not null,
+    semana_fim date not null,
+    valor_total numeric(12,2) not null default 0,
+    distribuicao jsonb not null default '[]'::jsonb,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.metas_semanais
+    add column if not exists loja_id uuid;
+alter table public.metas_semanais
+    add column if not exists meta_mensal_id uuid;
+alter table public.metas_semanais
+    add column if not exists nome text default '';
+alter table public.metas_semanais
+    add column if not exists semana_inicio date;
+alter table public.metas_semanais
+    add column if not exists semana_fim date;
+alter table public.metas_semanais
+    add column if not exists valor_total numeric(12,2) default 0;
+alter table public.metas_semanais
+    add column if not exists distribuicao jsonb default '[]'::jsonb;
+alter table public.metas_semanais
+    add column if not exists created_at timestamptz default now();
+alter table public.metas_semanais
+    add column if not exists updated_at timestamptz default now();
+
+grant select, insert, update, delete on public.metas_semanais to anon, authenticated;
+alter table public.metas_semanais enable row level security;
+drop policy if exists metas_semanais_anon_all on public.metas_semanais;
+create policy metas_semanais_anon_all
+    on public.metas_semanais for all to anon, authenticated
+    using (true)
+    with check (true);
+
 create table if not exists public.prospeccao_listas (
     id uuid primary key default gen_random_uuid(),
     loja_id uuid not null references public.lojas(id) on delete cascade,
