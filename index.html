@@ -2967,6 +2967,20 @@
             return Math.max(1, Math.round((new Date(`${end}T12:00:00`) - new Date(`${start}T12:00:00`)) / 86400000) + 1);
         }
 
+        function countBusinessDays(start, end) {
+            if (!start || !end) return 1;
+            const startDate = new Date(`${start}T12:00:00`);
+            const endDate = new Date(`${end}T12:00:00`);
+            let count = 0;
+            const cursor = new Date(startDate);
+            while (cursor <= endDate) {
+                const day = cursor.getDay();
+                if (day !== 0) count += 1;
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return Math.max(1, count);
+        }
+
         function configuredGoalValues(period, weekly, monthly, target, weekDays) {
             const userId = effectiveUserId();
             const userDistribution = (weekly?.distributions || []).find(item => item.userId === userId) || {};
@@ -3000,13 +3014,13 @@
 
         function calculateDailyGoalMetrics(weeklyTarget, weekStart, weekEnd, sales) {
             const today = getLocalDateKey();
+            const businessDays = countBusinessDays(weekStart, weekEnd);
             const elapsedEnd = today < weekEnd ? today : weekEnd;
-            const elapsedDays = today < weekStart ? 0 : daysBetween(weekStart, elapsedEnd);
-            const remainingDays = today > weekEnd ? 0 : daysBetween(today < weekStart ? weekStart : today, weekEnd);
+            const elapsedDays = today < weekStart ? 0 : countBusinessDays(weekStart, elapsedEnd);
+            const remainingDays = today > weekEnd ? 0 : countBusinessDays(today < weekStart ? weekStart : today, weekEnd);
             const realizedSales = sales.filter(sale => sale.date >= weekStart && sale.date <= elapsedEnd);
             const realized = realizedSales.reduce((sum, sale) => sum + Number(sale.value || 0), 0);
-            const totalDays = daysBetween(weekStart, weekEnd);
-            const originalDaily = totalDays ? weeklyTarget / totalDays : weeklyTarget;
+            const originalDaily = businessDays ? weeklyTarget / businessDays : weeklyTarget;
             const balance = Math.max(0, weeklyTarget - realized);
             const adjustedDaily = remainingDays ? balance / remainingDays : 0;
             const currentTicket = realizedSales.length ? realized / realizedSales.length : 0;
@@ -3022,19 +3036,21 @@
             const userId = effectiveUserId();
             const userDistribution = weekly.distributions.find(item => String(goalEntryUserId(item) || item.userId || '').trim() === String(userId || '')) || { value: 0, percentage: 0 };
             const sales = getSales();
-            const currentPeriod = 'semana';
-            const weekDays = daysBetween(weekly.weekStart, weekly.weekEnd);
-            const start = weekly.weekStart;
-            const end = weekly.weekEnd;
-            const target = Number(userDistribution.value || 0);
-            const salesStart = weekly.weekStart;
-            const salesEnd = weekly.weekEnd;
+            const period = (window.activeGoalPeriod || 'semana');
+            const businessDays = countBusinessDays(weekly.weekStart, weekly.weekEnd);
+            const weekTarget = Number(userDistribution.value || 0);
+            const dailyTarget = businessDays ? weekTarget / businessDays : weekTarget;
+            const start = period === 'dia' ? today : weekly.weekStart;
+            const end = period === 'dia' ? today : weekly.weekEnd;
+            const target = period === 'dia' ? dailyTarget : weekTarget;
+            const salesStart = start;
+            const salesEnd = end;
             const total = sales.filter(sale => sale.date >= salesStart && sale.date <= salesEnd).reduce((sum, sale) => sum + Number(sale.value || 0), 0);
-            const goalValues = configuredGoalValues('semana', weekly, null, target, weekDays);
-            const dailyMetrics = calculateDailyGoalMetrics(Number(userDistribution.value || 0), weekly.weekStart, weekly.weekEnd, sales);
+            const goalValues = configuredGoalValues(period, weekly, null, target, businessDays);
+            const dailyMetrics = calculateDailyGoalMetrics(period === 'dia' ? dailyTarget : weekTarget, start, end, sales.filter(sale => sale.date >= weekly.weekStart && sale.date <= weekly.weekEnd));
             const ticketSales = sales.filter(sale => sale.date >= salesStart && sale.date <= salesEnd);
             const ticketAverage = ticketSales.length ? total / ticketSales.length : 0;
-            return { goal: goalValues, target, total, ticketAverage, dailyMetrics, weeklyTarget: Number(userDistribution.value || 0), start: salesStart, end: salesEnd };
+            return { goal: goalValues, target, total, ticketAverage, dailyMetrics, weeklyTarget: weekTarget, start: salesStart, end: salesEnd, period };
         }
 
         function renderGoalMarkers(goal) {
@@ -3060,17 +3076,21 @@
             const goal = data.goal;
             const target = Number(goal.diamond || data.target || 0);
             const percent = target > 0 ? Math.min(100, data.total / target * 100) : 0;
-            document.getElementById('period-title').textContent = 'Meta Semanal';
-            document.getElementById('period-date').textContent = formatGoalPeriodDate(window.activeGoalPeriod, data.start, data.end);
+            const period = data.period || 'semana';
+            const label = period === 'dia' ? 'Meta Diária' : 'Meta Semanal';
+            document.getElementById('period-title').textContent = label;
+            document.getElementById('period-date').textContent = formatGoalPeriodDate(period, data.start, data.end);
             document.getElementById('total-vendas').textContent = money(data.total);
             document.getElementById('meta-valor').textContent = money(target || data.target || 0);
             document.getElementById('falta-valor').textContent = money(Math.max(0, (target || data.target || 0) - data.total));
             document.getElementById('ticket-medio').innerHTML = `${money(data.ticketAverage)} <i data-lucide="trending-up" class="h-3 w-3"></i>`;
             const metrics = data.dailyMetrics;
             const statusMessage = (target || data.target || 0) <= 0
-                ? 'Nenhuma meta semanal foi configurada para este vendedor.'
+                ? period === 'dia'
+                    ? 'Nenhuma meta diária foi configurada para este vendedor.'
+                    : 'Nenhuma meta semanal foi configurada para este vendedor.'
                 : metrics.remainingDays === 0
-                ? `Semana encerrada: ${money(metrics.realized)} realizados de ${money(target || data.target || 0)}.`
+                ? `${period === 'dia' ? 'Dia' : 'Semana'} encerrado: ${money(metrics.realized)} realizados de ${money(target || data.target || 0)}.`
                 : metrics.adjustedDaily > metrics.originalDaily
                     ? `Abaixo do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`
                     : `Acima do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`;
