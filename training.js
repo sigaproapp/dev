@@ -303,13 +303,13 @@
         const colors = { 1: ['h-24', 'bg-yellow-400', 'border-yellow-400', 'text-3xl'], 2: ['h-16', 'bg-slate-300', 'border-slate-300', 'text-xl'], 3: ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'] };
         const podium = ranking.length === 3 ? [ranking[1], ranking[0], ranking[2]] : ranking.length === 2 ? [ranking[1], ranking[0]] : ranking;
 
-        target.innerHTML = podium.map(seller => {
+        target.innerHTML = `<div class="flex min-h-32 items-end justify-center gap-3">${podium.map(seller => {
             const position = ranking.indexOf(seller) + 1;
             const [height, barColor, borderColor, numberSize] = colors[position] || ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'];
             const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
             const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
             return `<div class="flex min-w-0 flex-1 flex-col items-center"><div class="relative"><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}</div><p class="mb-2 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p><div class="${height} flex w-full items-center justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}">${position}</div></div>`;
-        }).join('');
+        }).join('')}</div>`;
         window.lucide?.createIcons();
     }
 

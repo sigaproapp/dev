@@ -4725,8 +4725,16 @@
 
             document.getElementById('toggle-mood-history').addEventListener('click', event => {
                 const history = document.getElementById('mood-history');
+                const options = document.getElementById('mood-options');
+                const todayHasMood = Boolean(getMoodRecords()[getLocalDateKey()]);
                 const expanded = history.classList.toggle('hidden') === false;
-                document.getElementById('mood-options').classList.toggle('hidden', !expanded);
+
+                if (todayHasMood) {
+                    options.classList.add('hidden');
+                } else {
+                    options.classList.toggle('hidden', !expanded);
+                }
+
                 history.setAttribute('aria-hidden', String(!expanded));
                 event.currentTarget.setAttribute('aria-expanded', String(expanded));
                 event.currentTarget.setAttribute('aria-label', expanded ? 'Ocultar histórico de humor' : 'Mostrar histórico de humor');
