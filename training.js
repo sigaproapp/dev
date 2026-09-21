@@ -155,16 +155,59 @@
         pdfUrl.insertAdjacentHTML('beforebegin', '<label class="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Arquivo PDF<input id="training-pdf-file" type="file" accept="application/pdf" class="mt-2 block w-full text-xs"></label>');
         mode.classList.add('hidden');
         values.classList.add('hidden');
-        values.insertAdjacentHTML('beforebegin', '<div class="rounded-xl border border-slate-200 p-3"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Dias disponíveis</p><div class="flex gap-2"><input id="training-availability-month" type="month" class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs"><input id="training-availability-date" type="date" class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs"><button id="training-add-date" type="button" class="rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-black">Adicionar</button></div><div id="training-weekdays" class="mt-2 grid grid-cols-7 gap-1"></div><label class="mt-2 flex items-center gap-2 text-xs font-bold text-slate-600"><input id="training-all-days" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-rose-600"> Todos os dias</label><div id="training-dates" class="mt-2 flex flex-wrap gap-1"></div></div>');
+        values.insertAdjacentHTML('beforebegin', '<div class="rounded-xl border border-slate-200 p-3"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Dias disponíveis</p><input id="training-calendar-month" type="month" value="'+today().slice(0, 7)+'" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold outline-none"><div id="training-calendar" class="mt-2 grid grid-cols-7 gap-1"></div><label class="mt-2 flex items-center gap-2 text-[10px] font-bold text-slate-500"><input id="training-all-days" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-rose-600"> Todos os dias</label><div id="training-dates" class="mt-2 flex flex-wrap gap-1"></div></div>');
         questions.classList.add('hidden');
         questions.insertAdjacentHTML('beforebegin', '<div class="rounded-xl border border-slate-200 p-3"><div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Perguntas</p><button id="training-add-question" type="button" class="rounded-xl bg-rose-50 px-3 py-2 text-[10px] font-black text-rose-600">Adicionar pergunta</button></div><div id="training-manual-questions" class="mt-3 space-y-3"></div></div>');
         const dates = new Set();
-        document.getElementById('training-weekdays').innerHTML = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => `<button type="button" data-training-weekday="${index}" class="rounded-lg border border-slate-200 bg-slate-50 px-1 py-2 text-[9px] font-black text-slate-500">${day}</button>`).join('');
-        const renderDates = () => { document.getElementById('training-dates').innerHTML = [...dates].sort().map(date => `<button type="button" data-remove-training-date="${date}" class="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-700">${date.split('-').reverse().join('/')} ×</button>`).join(''); values.value = [...dates].sort().join(','); };
-        document.getElementById('training-add-date').onclick = () => { const date = document.getElementById('training-availability-date').value; if (!date) return; dates.add(date); document.getElementById('training-all-days').checked = false; document.getElementById('training-availability-mode').value = 'dates'; document.getElementById('training-availability-date').value = ''; renderDates(); };
-        document.getElementById('training-dates').onclick = event => { const button = event.target.closest('[data-remove-training-date]'); if (button) { dates.delete(button.dataset.removeTrainingDate); renderDates(); } };
-        document.getElementById('training-weekdays').onclick = event => { const button = event.target.closest('[data-training-weekday]'); if (!button) return; button.classList.toggle('border-rose-500'); button.classList.toggle('bg-rose-500'); button.classList.toggle('text-white'); document.getElementById('training-all-days').checked = false; document.getElementById('training-availability-mode').value = 'weekdays'; values.value = [...document.querySelectorAll('[data-training-weekday].bg-rose-500')].map(item => item.dataset.trainingWeekday).join(','); };
-        document.getElementById('training-all-days').onchange = event => { if (event.target.checked) { dates.clear(); document.querySelectorAll('[data-training-weekday]').forEach(button => button.className = 'rounded-lg border border-slate-200 bg-slate-50 px-1 py-2 text-[9px] font-black text-slate-500'); document.getElementById('training-availability-mode').value = 'all'; values.value = ''; renderDates(); } };
+        const renderDates = () => {
+            const target = document.getElementById('training-dates');
+            if (!target) return;
+            target.innerHTML = [...dates].sort().map(date => `<button type="button" data-remove-training-date="${date}" class="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-700">${date.split('-').reverse().join('/')} ×</button>`).join('');
+            values.value = [...dates].sort().join(',');
+            mode.value = document.getElementById('training-all-days').checked ? 'all' : 'dates';
+        };
+        const renderCalendar = () => {
+            const monthInput = document.getElementById('training-calendar-month');
+            const calendar = document.getElementById('training-calendar');
+            const month = monthInput?.value || today().slice(0, 7);
+            if (!calendar) return;
+            const [year, monthNumber] = month.split('-').map(Number);
+            const firstDay = new Date(year, monthNumber - 1, 1);
+            const totalDays = new Date(year, monthNumber, 0).getDate();
+            const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+            calendar.innerHTML = labels.map(label => `<span class="py-1 text-center text-[9px] font-black text-slate-400">${label}</span>`).join('');
+            for (let index = 0; index < firstDay.getDay(); index += 1) calendar.insertAdjacentHTML('beforeend', '<span></span>');
+            for (let day = 1; day <= totalDays; day += 1) {
+                const dateKey = `${month}-${String(day).padStart(2, '0')}`;
+                const selected = dates.has(dateKey);
+                calendar.insertAdjacentHTML('beforeend', `<button type="button" data-training-date="${dateKey}" class="rounded-lg border px-1 py-2 text-[10px] font-black ${selected ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-200 bg-slate-50 text-slate-500'}">${day}</button>`);
+            }
+            document.getElementById('training-all-days').checked = dates.size === 0;
+            renderDates();
+        };
+        document.getElementById('training-dates').onclick = event => { const button = event.target.closest('[data-remove-training-date]'); if (button) { dates.delete(button.dataset.removeTrainingDate); renderCalendar(); } };
+        document.getElementById('training-calendar').addEventListener('click', event => {
+            const button = event.target.closest('[data-training-date]');
+            if (!button) return;
+            const dateKey = button.dataset.trainingDate;
+            if (dates.has(dateKey)) { dates.delete(dateKey); }
+            else { dates.add(dateKey); }
+            document.getElementById('training-all-days').checked = false;
+            renderCalendar();
+        });
+        document.getElementById('training-calendar-month').addEventListener('change', renderCalendar);
+        document.getElementById('training-all-days').onchange = event => {
+            if (event.target.checked) {
+                dates.clear();
+                mode.value = 'all';
+                values.value = '';
+                renderCalendar();
+            } else {
+                mode.value = 'dates';
+                renderCalendar();
+            }
+        };
+        renderCalendar();
         const renderQuestions = () => { const rows = [...document.querySelectorAll('#training-manual-questions > div')]; questions.value = JSON.stringify(rows.map(row => ({ question: row.querySelector('[data-manual-question]').value.trim(), options: [...row.querySelectorAll('[data-manual-option]')].map(input => input.value.trim()).filter(Boolean) })).filter(item => item.question && item.options.length >= 2)); };
         document.getElementById('training-add-question').onclick = () => { const row = document.createElement('div'); row.className = 'rounded-xl bg-slate-50 p-3'; row.innerHTML = '<input data-manual-question placeholder="Pergunta" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"><div class="mt-2 grid gap-2 sm:grid-cols-2"><input data-manual-option placeholder="Resposta correta" class="rounded-lg border border-slate-200 px-3 py-2 text-xs"><input data-manual-option placeholder="Opção 2" class="rounded-lg border border-slate-200 px-3 py-2 text-xs"><input data-manual-option placeholder="Opção 3" class="rounded-lg border border-slate-200 px-3 py-2 text-xs"><input data-manual-option placeholder="Opção 4" class="rounded-lg border border-slate-200 px-3 py-2 text-xs"></div>'; row.addEventListener('input', renderQuestions); document.getElementById('training-manual-questions').appendChild(row); renderQuestions(); };
         document.getElementById('training-pdf-file').onchange = event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { pdfUrl.value = reader.result; }; reader.readAsDataURL(file); };
