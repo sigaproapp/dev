@@ -301,10 +301,14 @@
         }
 
         const colors = { 1: ['h-24', 'bg-yellow-400', 'border-yellow-400', 'text-3xl'], 2: ['h-16', 'bg-slate-300', 'border-slate-300', 'text-xl'], 3: ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'] };
-        const podium = ranking.length === 3 ? [ranking[1], ranking[0], ranking[2]] : ranking.length === 2 ? [ranking[1], ranking[0]] : ranking;
+        const podium = ranking.length === 3
+            ? [{ seller: ranking[1], position: 2 }, { seller: ranking[0], position: 1 }, { seller: ranking[2], position: 3 }]
+            : ranking.length === 2
+                ? [{ seller: ranking[1], position: 2 }, { seller: ranking[0], position: 1 }]
+                : ranking.map((seller, index) => ({ seller, position: index + 1 }));
 
-        target.innerHTML = `<div class="flex min-h-32 items-end justify-center gap-3">${podium.map(seller => {
-            const position = ranking.indexOf(seller) + 1;
+        target.innerHTML = `<div class="flex min-h-32 items-end justify-center gap-3">${podium.map(item => {
+            const { seller, position } = item;
             const [height, barColor, borderColor, numberSize] = colors[position] || ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'];
             const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
             const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
