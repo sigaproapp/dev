@@ -95,6 +95,10 @@
             outline: 3px solid rgba(245, 158, 11, 0.25);
             outline-offset: 2px;
         }
+        .manager-overview-date-button {
+            min-width: 0;
+            transition: all 180ms ease;
+        }
         #manager-bar > div { min-height: 2.75rem; }
         #manager-bar button, #manager-bar select { min-height: 2.25rem; }
         #mobile-navigation { box-shadow: 0 -8px 24px rgba(30, 41, 59, 0.08); }
@@ -667,7 +671,7 @@
             <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div class="flex-1">
                     <p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Dias da semana</p>
-                    <div id="manager-overview-date-nav" class="grid grid-cols-4 gap-2 sm:grid-cols-7"></div>
+                    <div id="manager-overview-date-nav" class="space-y-2"></div>
                 </div>
                 <label class="block min-w-[11rem] text-[10px] font-black uppercase tracking-wider text-slate-400">Vendedor<select id="manager-overview-vendor-filter" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></select></label>
             </div>
@@ -999,11 +1003,37 @@
             if (!table) return;
             const pending = pendingSupabaseSyncs.get(storageKey) || { list: [], removedIds: [], timer: null };
             pending.list = list;
-            pending.removedIds = [...new Set([...pending.removedIds, ...removedIds])];
+            pending.removedIds = [...new Set([...pending.removedIds, ...removedIds])].filter(Boolean);
             savePendingSupabaseSync(storageKey, pending);
             window.clearTimeout(pending.timer);
             pending.timer = window.setTimeout(() => flushSupabaseSync(storageKey, table), 350);
             pendingSupabaseSyncs.set(storageKey, pending);
+        }
+
+        async function reconcileDeletedTasksWithSupabase() {
+            const session = getSession();
+            if (!session?.lojaId || !isSupabaseUuid(session.lojaId)) return;
+            const localTaskIds = new Set();
+            Object.keys(localStorage)
+                .filter(key => key.startsWith('siga-tarefas::'))
+                .forEach(key => {
+                    try {
+                        const tasks = JSON.parse(localStorage.getItem(key)) || [];
+                        (Array.isArray(tasks) ? tasks : []).forEach(task => {
+                            if (task?.id && isSupabaseUuid(task.id)) localTaskIds.add(task.id);
+                        });
+                    } catch (error) {
+                        console.warn('Falha ao validar tarefas locais para sincronização:', error);
+                    }
+                });
+            const { data, error } = await sigaSupabase.from('tarefas').select('id').eq('loja_id', session.lojaId);
+            if (error || !Array.isArray(data)) return;
+            const staleIds = data.map(row => row.id).filter(id => id && isSupabaseUuid(id) && !localTaskIds.has(id));
+            if (!staleIds.length) return;
+            const { error: deleteError } = await sigaSupabase.from('tarefas').delete().in('id', staleIds);
+            if (deleteError) {
+                console.warn('Falha ao limpar tarefas órfãs no Supabase:', deleteError.message);
+            }
         }
 
         async function flushSupabaseSync(storageKey, table) {
@@ -1057,6 +1087,7 @@
                 return;
             }
             clearPendingSupabaseSync(storageKey);
+            if (table === 'tarefas') await reconcileDeletedTasksWithSupabase();
         }
 
         window.syncStoredList = syncStoredList;
@@ -2271,18 +2302,18 @@
             const lastDate = dates[dates.length - 1];
             const rangeLabel = `${firstDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} · ${lastDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
             nav.innerHTML = `
-                <div class="mb-2 flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2">
                     <button type="button" data-manager-overview-shift="-7" class="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-black text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">← Ant</button>
                     <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">${escapeHtml(rangeLabel)}</span>
                     <button type="button" data-manager-overview-shift="7" class="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-black text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">Próx →</button>
                 </div>
-                <div class="grid grid-cols-7 gap-2">
+                <div class="grid grid-cols-7 gap-1.5 sm:gap-2">
                     ${dates.map(date => {
                         const key = getLocalDateKey(date);
                         const shortLabel = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '');
                         const isSelected = key === managerOverviewSelectedDate;
                         const isToday = key === getLocalDateKey();
-                        return `<button type="button" data-manager-overview-date="${key}" class="min-w-0 rounded-xl border px-1 py-2 text-center transition ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300 hover:bg-indigo-50'}">
+                        return `<button type="button" data-manager-overview-date="${key}" class="manager-overview-date-button rounded-xl border px-1 py-2 text-center ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300 hover:bg-indigo-50'}">
                             <span class="block text-[9px] font-black uppercase tracking-wide opacity-80">${isToday ? 'Hoje' : shortLabel}</span>
                             <span class="mt-1 block text-sm font-black">${date.getDate()}</span>
                         </button>`;
