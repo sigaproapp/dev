@@ -2356,19 +2356,13 @@
             const key = `siga-tarefas::${userId}`;
             const current = readStoredList(key).map(task => normalizeTaskAssignment(task, userId));
             const todayKey = getLocalDateKey();
-            const existingKeys = new Set(current.filter(task => task.owner === 'manager' && task.title === title && task.time === time && task.date >= todayKey).map(task => `${task.date}|${task.title}|${task.time}`));
-            const tasks = createRecurringTasks(title, time, todayKey, repeatDays)
-                .map(task => normalizeTaskAssignment({
-                    ...task,
-                    owner: 'manager',
-                    userId,
-                    ownerId: userId,
-                    vendedorId: userId,
-                    responsavel_id: userId,
-                    vendorId: userId,
-                    lojaId: getSession()?.lojaId || task.lojaId || null
-                }, userId))
-                .filter(task => task.date >= todayKey && !existingKeys.has(`${task.date}|${task.title}|${task.time}`));
+            const existingDates = buildRecurringTaskDateSet(current, title, time, todayKey);
+            const tasks = createRecurringTasks(title, time, todayKey, repeatDays, {
+                existingDates,
+                owner: 'manager',
+                userId,
+                lojaId: getSession()?.lojaId || null
+            }).map(task => normalizeTaskAssignment(task, userId));
             if (!tasks.length) return;
             const updated = [...current, ...tasks];
             localStorage.setItem(key, JSON.stringify(updated));
@@ -3294,8 +3288,17 @@
             return taskDateValue(task) < getLocalDateKey();
         }
 
-        function createRecurringTasks(title, time, startDate, repeatDays) {
-            const seriesId = crypto.randomUUID();
+        function buildRecurringTaskDateSet(tasks, title, time, minDate = null) {
+            return new Set(tasks
+                .filter(task => task.title === title && task.time === time && (!minDate || task.date >= minDate))
+                .map(task => task.date));
+        }
+
+        function createRecurringTasks(title, time, startDate, repeatDays, options = {}) {
+            const seriesId = options.seriesId || crypto.randomUUID();
+            const existingDates = options.existingDates || new Set();
+            const owner = options.owner || currentTaskOwnerRole();
+            const userId = options.userId || effectiveUserId();
             const tasks = [];
             const start = new Date(`${startDate}T12:00:00`);
             const today = new Date();
@@ -3305,7 +3308,26 @@
             const cursor = new Date(start);
             for (; cursor <= monthEnd; cursor.setDate(cursor.getDate() + 1)) {
                 if (!repeatDays.includes(cursor.getDay())) continue;
-                tasks.push({ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: getLocalDateKey(cursor), seriesId, repeatDays, lojaId: getSession()?.lojaId || null });
+                const dateKey = getLocalDateKey(cursor);
+                if (dateKey < startDate) continue;
+                if (existingDates.has(dateKey)) continue;
+                tasks.push({
+                    id: crypto.randomUUID(),
+                    title,
+                    time,
+                    owner,
+                    userId,
+                    ownerId: userId,
+                    vendedorId: userId,
+                    responsavel_id: userId,
+                    vendorId: userId,
+                    completed: false,
+                    observation: '',
+                    date: dateKey,
+                    seriesId,
+                    repeatDays,
+                    lojaId: options.lojaId || getSession()?.lojaId || null
+                });
             }
             return tasks;
         }
@@ -4423,7 +4445,15 @@
                     showToast('Não é possível cadastrar tarefas em dias que já passaram.', 'error');
                     return;
                 }
-                const newTasks = repeatEnabled && repeatDays.length ? createRecurringTasks(title, time, taskDate, repeatDays) : [{ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: taskDate }];
+                const existingDates = buildRecurringTaskDateSet(tasks, title, time, taskDate);
+                const newTasks = repeatEnabled && repeatDays.length
+                    ? createRecurringTasks(title, time, taskDate, repeatDays, {
+                        existingDates,
+                        owner: currentTaskOwnerRole(),
+                        userId: effectiveUserId(),
+                        lojaId: getSession()?.lojaId || null
+                    })
+                    : [{ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: taskDate }];
                 tasks.push(...newTasks);
                 saveTasks(tasks);
                 pendingAddDate = null;
