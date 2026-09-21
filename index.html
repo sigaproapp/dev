@@ -855,15 +855,25 @@
 
         function normalizeTaskAssignment(task, fallbackUserId = null) {
             if (!task || typeof task !== 'object') return task;
-            const assignedUserId = task.userId || task.ownerId || task.vendedorId || task.responsavel_id || task.vendorId || fallbackUserId || null;
+            const assignedUserId = task.userId || task.ownerId || task.vendedorId || task.responsavel_id || task.vendorId || task.responsavelId || fallbackUserId || null;
+            const normalizedUserId = assignedUserId || null;
             return {
                 ...task,
-                userId: task.userId || assignedUserId || null,
-                ownerId: task.ownerId || assignedUserId || null,
-                vendedorId: task.vendedorId || assignedUserId || null,
-                responsavel_id: task.responsavel_id || assignedUserId || null,
-                vendorId: task.vendorId || assignedUserId || null
+                userId: task.userId || normalizedUserId,
+                ownerId: task.ownerId || normalizedUserId,
+                vendedorId: task.vendedorId || normalizedUserId,
+                responsavel_id: task.responsavel_id || normalizedUserId,
+                responsavelId: task.responsavelId || normalizedUserId,
+                vendorId: task.vendorId || normalizedUserId,
+                assignedUserId: task.assignedUserId || normalizedUserId
             };
+        }
+
+        function taskBelongsToUser(task, userId) {
+            if (!userId || !task) return false;
+            const normalizedTask = normalizeTaskAssignment(task, userId);
+            const candidates = [normalizedTask.userId, normalizedTask.ownerId, normalizedTask.vendedorId, normalizedTask.responsavel_id, normalizedTask.vendorId, normalizedTask.responsavelId, normalizedTask.assignedUserId];
+            return candidates.some(candidate => candidate && candidate === userId);
         }
 
         function databaseRowFromApp(table, item, scopedUserId = null) {
@@ -888,7 +898,26 @@
         }
 
         function databaseRowToApp(table, row) {
-            if (table === 'tarefas') return { ...row, title: row.titulo ?? row.title, time: row.horario ?? row.time, owner: row.owner ?? 'user', ownerId: row.responsavel_id ?? row.ownerId, completed: row.concluida ?? row.completed ?? false, observation: row.observacao ?? row.observation ?? '', date: row.data ?? row.date, seriesId: row.serie_id ?? row.seriesId, repeatDays: row.dias_repeticao ?? row.repeatDays };
+            if (table === 'tarefas') {
+                const assignedUserId = row.responsavel_id ?? row.ownerId ?? row.userId ?? row.vendedorId ?? row.vendorId ?? row.responsavelId ?? null;
+                return {
+                    ...row,
+                    userId: assignedUserId,
+                    ownerId: row.responsavel_id ?? row.ownerId ?? assignedUserId,
+                    vendedorId: row.responsavel_id ?? row.vendedorId ?? assignedUserId,
+                    vendorId: row.responsavel_id ?? row.vendorId ?? assignedUserId,
+                    responsavel_id: row.responsavel_id ?? row.ownerId ?? assignedUserId,
+                    responsavelId: row.responsavel_id ?? row.ownerId ?? assignedUserId,
+                    title: row.titulo ?? row.title,
+                    time: row.horario ?? row.time,
+                    owner: row.owner ?? 'user',
+                    completed: row.concluida ?? row.completed ?? false,
+                    observation: row.observacao ?? row.observation ?? '',
+                    date: row.data ?? row.date,
+                    seriesId: row.serie_id ?? row.seriesId,
+                    repeatDays: row.dias_repeticao ?? row.repeatDays
+                };
+            }
             if (table === 'vendas') { const datetime = row.data_hora ?? row.datetime; return { ...row, userId: row.vendedor_id ?? row.userId, client: row.cliente ?? row.client ?? '', value: row.valor ?? row.value, datetime, date: row.data ?? row.date ?? String(datetime || '').slice(0, 10), products: row.produtos ?? row.products ?? [] }; }
             if (table === 'atendimentos') { const datetime = row.data_hora ?? row.datetime; return { ...row, userId: row.vendedor_id ?? row.userId, client: row.cliente ?? row.client ?? '', outcome: row.resultado ?? row.outcome, outcomeLabel: row.resultado_label ?? row.outcomeLabel, value: row.valor ?? row.value ?? 0, phone: row.telefone ?? row.phone ?? '', notes: row.observacao ?? row.notes ?? '', products: row.produtos ?? row.products ?? [], shownProducts: row.produtos_apresentados ?? row.shownProducts ?? [], demand: row.demanda ?? row.demand ?? '', saleId: row.venda_id ?? row.saleId, conditionalId: row.condicional_id ?? row.conditionalId, datetime, date: row.data ?? row.date ?? String(datetime || '').slice(0, 10) }; }
             if (table === 'condicionais') return { ...row, userId: row.vendedor_id ?? row.userId, client: row.cliente ?? row.client, phone: row.telefone ?? row.phone, observation: row.observacao ?? row.observation ?? '', products: row.produtos ?? row.products ?? [], dueDate: row.prazo ?? row.dueDate, status: row.status ?? 'aberta', taskId: row.task_id ?? row.taskId, createdAt: row.created_at ?? row.createdAt };
@@ -3184,10 +3213,7 @@
         }
 
         function taskOwnershipMatchesUser(task, userId) {
-            if (!userId || !task) return false;
-            const normalizedTask = normalizeTaskAssignment(task, userId);
-            const candidates = [normalizedTask.userId, normalizedTask.ownerId, normalizedTask.vendedorId, normalizedTask.responsavel_id, normalizedTask.vendorId, normalizedTask.responsavelId];
-            return candidates.some(candidate => candidate === userId);
+            return taskBelongsToUser(task, userId);
         }
 
         function getTasks() {
@@ -3201,7 +3227,7 @@
                     const assignedByManager = Object.keys(localStorage)
                         .filter(key => key.startsWith('siga-tarefas::'))
                         .flatMap(key => readStoredList(key).map(task => normalizeTaskAssignment(task, userId)))
-                        .filter(task => taskOwnershipMatchesUser(task, userId));
+                        .filter(task => taskBelongsToUser(task, userId));
                     savedTasks = mergeStoredLists(savedTasks, assignedByManager);
                 }
                 const extendedTasks = extendRecurringTaskHorizon(savedTasks);
