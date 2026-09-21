@@ -24,6 +24,58 @@ create policy humor_registros_anon_all
     using (true)
     with check (true);
 
+create table if not exists public.tarefas (
+    id uuid primary key default gen_random_uuid(),
+    loja_id uuid not null references public.lojas(id) on delete cascade,
+    responsavel_id uuid not null references public.perfis(id) on delete cascade,
+    titulo text not null default '',
+    horario time not null default '10:00',
+    owner text not null default 'user',
+    concluida boolean not null default false,
+    observacao text not null default '',
+    data date not null,
+    serie_id uuid,
+    dias_repeticao jsonb not null default '[]'::jsonb,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.tarefas
+    add column if not exists loja_id uuid;
+alter table public.tarefas
+    add column if not exists responsavel_id uuid;
+alter table public.tarefas
+    add column if not exists titulo text default '';
+alter table public.tarefas
+    add column if not exists horario time default '10:00';
+alter table public.tarefas
+    add column if not exists owner text default 'user';
+alter table public.tarefas
+    add column if not exists concluida boolean default false;
+alter table public.tarefas
+    add column if not exists observacao text default '';
+alter table public.tarefas
+    add column if not exists data date;
+alter table public.tarefas
+    add column if not exists serie_id uuid;
+alter table public.tarefas
+    add column if not exists dias_repeticao jsonb default '[]'::jsonb;
+alter table public.tarefas
+    add column if not exists created_at timestamptz default now();
+alter table public.tarefas
+    add column if not exists updated_at timestamptz default now();
+
+create index if not exists tarefas_loja_data_idx on public.tarefas (loja_id, data);
+create index if not exists tarefas_responsavel_data_idx on public.tarefas (responsavel_id, data);
+
+grant select, insert, update, delete on public.tarefas to anon, authenticated;
+alter table public.tarefas enable row level security;
+drop policy if exists tarefas_anon_all on public.tarefas;
+create policy tarefas_anon_all
+    on public.tarefas for all to anon, authenticated
+    using (true)
+    with check (true);
+
 create table if not exists public.condicionais (
     id uuid primary key default gen_random_uuid(),
     loja_id uuid not null references public.lojas(id) on delete cascade,

@@ -2324,8 +2324,9 @@
         function createManagerRecurringTasks(userId, title, time, repeatDays) {
             const key = `siga-tarefas::${userId}`;
             const current = readStoredList(key).map(task => normalizeTaskAssignment(task, userId));
-            const existingKeys = new Set(current.filter(task => task.owner === 'manager' && task.title === title && task.time === time).map(task => `${task.date}|${task.title}|${task.time}`));
-            const tasks = createRecurringTasks(title, time, getLocalDateKey(), repeatDays)
+            const todayKey = getLocalDateKey();
+            const existingKeys = new Set(current.filter(task => task.owner === 'manager' && task.title === title && task.time === time && task.date >= todayKey).map(task => `${task.date}|${task.title}|${task.time}`));
+            const tasks = createRecurringTasks(title, time, todayKey, repeatDays)
                 .map(task => normalizeTaskAssignment({
                     ...task,
                     owner: 'manager',
@@ -2333,9 +2334,10 @@
                     ownerId: userId,
                     vendedorId: userId,
                     responsavel_id: userId,
-                    vendorId: userId
+                    vendorId: userId,
+                    lojaId: getSession()?.lojaId || task.lojaId || null
                 }, userId))
-                .filter(task => !existingKeys.has(`${task.date}|${task.title}|${task.time}`));
+                .filter(task => task.date >= todayKey && !existingKeys.has(`${task.date}|${task.title}|${task.time}`));
             if (!tasks.length) return;
             const updated = [...current, ...tasks];
             localStorage.setItem(key, JSON.stringify(updated));
@@ -3259,12 +3261,15 @@
             const seriesId = crypto.randomUUID();
             const tasks = [];
             const start = new Date(`${startDate}T12:00:00`);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (start < today) start.setTime(today.getTime());
             const end = new Date(start);
             end.setDate(end.getDate() + 365);
             const cursor = new Date(start);
             for (; cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
                 if (!repeatDays.includes(cursor.getDay())) continue;
-                tasks.push({ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: getLocalDateKey(cursor), seriesId, repeatDays });
+                tasks.push({ id: crypto.randomUUID(), title, time, owner: currentTaskOwnerRole(), completed: false, observation: '', date: getLocalDateKey(cursor), seriesId, repeatDays, lojaId: getSession()?.lojaId || null });
             }
             return tasks;
         }
