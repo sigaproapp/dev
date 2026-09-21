@@ -2920,13 +2920,20 @@
             goalSection.classList.remove('opacity-80');
         }
 
+        function resolveActiveWeeklyGoal(goals, dateKey) {
+            const sorted = [...(goals || [])].sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
+            const matching = sorted.filter(goal => dateKey >= (goal.weekStart || '') && dateKey <= (goal.weekEnd || ''));
+            if (matching.length) return matching.reduce((latest, current) => (current.weekStart > (latest.weekStart || '') ? current : latest), matching[0]);
+            return sorted.filter(goal => (goal.weekStart || '') <= dateKey).at(-1) || sorted[0] || null;
+        }
+
         function goalForCurrentUser() {
             const session = getSession();
             const userId = effectiveUserId();
             const today = getLocalDateKey();
-            const weeklyGoals = getWeeklyGoals().filter(goal => goal.distributions?.some(item => item.userId === userId) && goal.lojaId === session?.lojaId).sort((first, second) => first.weekStart.localeCompare(second.weekStart));
-            const activeWeekly = weeklyGoals.find(goal => today >= goal.weekStart && today <= goal.weekEnd);
-            return { weekly: activeWeekly || weeklyGoals.filter(goal => goal.weekStart <= today).at(-1) || weeklyGoals[0] || null, monthly: null };
+            const weeklyGoals = getWeeklyGoals().filter(goal => goal.distributions?.some(item => item.userId === userId) && goal.lojaId === session?.lojaId).sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
+            const activeWeekly = resolveActiveWeeklyGoal(weeklyGoals, today);
+            return { weekly: activeWeekly || weeklyGoals[0] || null, monthly: null };
         }
 
         function daysBetween(start, end) {
@@ -2992,8 +2999,8 @@
             const start = weekly.weekStart;
             const end = weekly.weekEnd;
             const target = Number(userDistribution.value || 0);
-            const salesStart = rankingDateRange().start;
-            const salesEnd = rankingDateRange().end;
+            const salesStart = weekly.weekStart;
+            const salesEnd = weekly.weekEnd;
             const total = sales.filter(sale => sale.date >= salesStart && sale.date <= salesEnd).reduce((sum, sale) => sum + Number(sale.value || 0), 0);
             const goalValues = configuredGoalValues('semana', weekly, null, target, weekDays);
             const dailyMetrics = calculateDailyGoalMetrics(Number(userDistribution.value || 0), weekly.weekStart, weekly.weekEnd, sales);
