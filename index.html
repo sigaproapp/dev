@@ -703,33 +703,60 @@
     <section id="manager-goals-page" class="hidden max-w-5xl mx-auto p-4 space-y-6">
         <div class="flex items-center gap-3"><button type="button" data-back-dashboard aria-label="Voltar ao início" class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"><i data-lucide="arrow-left" class="h-4 w-4"></i></button><div><h2 class="text-2xl font-black text-slate-800">Metas da equipe</h2><p class="mt-1 text-xs font-medium text-slate-500">Crie e edite as metas de cada vendedor.</p></div></div>
         <section id="goal-management-section" class="hidden rounded-[2rem] border border-amber-100 bg-white p-6 shadow-sm">
-            <div class="mb-4"><h3 class="text-lg font-black text-slate-800">Metas da equipe</h3><p class="mt-1 text-xs text-slate-500">Cadastre o total mensal, crie semanas e distribua cada semana entre os vendedores.</p></div>
-            <form id="monthly-goal-form" class="grid gap-3 sm:grid-cols-3">
-                <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Mês<input id="monthly-goal-month" type="month" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
-                <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Meta mensal total<input id="monthly-goal-total" type="number" min="0.01" step="0.01" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
-                <div class="flex items-end"><button type="submit" class="w-full rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-black text-white hover:bg-amber-600">Salvar meta mensal</button></div>
-            </form>
+            <div class="mb-4"><h3 class="text-lg font-black text-slate-800">Metas da equipe</h3><p class="mt-1 text-xs text-slate-500">Cadastre semanas e defina os valores por faixa para cada vendedor.</p></div>
             <form id="weekly-goal-form" class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Meta mensal<select id="weekly-goal-month-select" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></select></label>
                 <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Nome da semana<input id="weekly-goal-name" placeholder="Semana 1" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
                 <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Início<input id="weekly-goal-start" type="date" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
                 <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Fim<input id="weekly-goal-end" type="date" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
-                <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Valor da semana<input id="weekly-goal-total" type="number" min="0.01" step="0.01" required class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold outline-none"></label>
-                <div class="sm:col-span-2 lg:col-span-3"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Distribuição por vendedor <span id="weekly-goal-percent-total" class="text-indigo-600">0%</span></p><div id="weekly-goal-vendors" class="grid gap-2 sm:grid-cols-2"></div></div>
                 <div class="flex items-end"><button type="submit" class="w-full rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black text-white hover:bg-indigo-700">Salvar semana</button></div>
+                <div class="sm:col-span-2 lg:col-span-4"><p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Valores por faixa por vendedor <span id="weekly-goal-percent-total" class="text-indigo-600">Valores</span></p><div id="weekly-goal-vendors" class="grid gap-2 sm:grid-cols-2"></div></div>
             </form>
             <p id="goal-form-feedback" class="mt-3 min-h-4 text-center text-[10px] font-bold text-emerald-600"></p>
         </section>
-        <div class="grid gap-6 lg:grid-cols-2">
-            <section class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-                <h3 class="mb-4 text-sm font-black uppercase tracking-wider text-slate-800">Metas semanais criadas</h3>
-                <div id="weekly-goals-list" class="space-y-2"></div>
-            </section>
-            <section class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-                <h3 class="mb-4 text-sm font-black uppercase tracking-wider text-slate-800">Metas mensais criadas</h3>
-                <div id="monthly-goals-list" class="space-y-2"></div>
-            </section>
-        </div>
+        <section id="store-goal-summary-section" class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Resumo da loja</p>
+                    <h3 class="mt-1 text-lg font-black text-slate-800">Progresso das metas da semana</h3>
+                </div>
+                <span id="store-goal-period-label" class="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase text-indigo-600">Semana</span>
+            </div>
+            <div class="mt-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Progresso geral</p>
+                    <p id="store-goal-progress-text" class="text-sm font-black text-slate-800">0%</p>
+                </div>
+                <div class="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+                    <div id="store-goal-progress-fill" class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-3 text-[10px] font-bold text-slate-500">
+                    <span id="store-goal-current-total">Realizado: R$ 0,00</span>
+                    <span id="store-goal-target-total">Meta: R$ 0,00</span>
+                </div>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-2xl border border-orange-100 bg-orange-50 p-3">
+                    <p class="text-[9px] font-black uppercase tracking-wider text-orange-600">Bronze</p>
+                    <p id="store-goal-bronze-total" class="mt-2 text-xl font-black text-slate-800">R$ 0,00</p>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <p class="text-[9px] font-black uppercase tracking-wider text-slate-500">Prata</p>
+                    <p id="store-goal-silver-total" class="mt-2 text-xl font-black text-slate-800">R$ 0,00</p>
+                </div>
+                <div class="rounded-2xl border border-yellow-200 bg-yellow-50 p-3">
+                    <p class="text-[9px] font-black uppercase tracking-wider text-yellow-700">Ouro</p>
+                    <p id="store-goal-gold-total" class="mt-2 text-xl font-black text-slate-800">R$ 0,00</p>
+                </div>
+                <div class="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+                    <p class="text-[9px] font-black uppercase tracking-wider text-violet-700">Diamante</p>
+                    <p id="store-goal-diamond-total" class="mt-2 text-xl font-black text-slate-800">R$ 0,00</p>
+                </div>
+            </div>
+        </section>
+        <section class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+            <h3 class="mb-4 text-sm font-black uppercase tracking-wider text-slate-800">Metas semanais criadas</h3>
+            <div id="weekly-goals-list" class="space-y-2"></div>
+        </section>
     </section>
 
     <!-- GESTAO DE PROSPECCAO -->
@@ -815,7 +842,6 @@
             'siga-atendimentos': 'atendimentos',
             'siga-condicionais': 'condicionais',
             'siga-metas': 'metas',
-            'siga-metas-mensais': 'metas_mensais',
             'siga-metas-semanais': 'metas_semanais',
             'siga-vendas-loja': 'vendas_loja',
             'siga-conteudos': 'conteudos',
@@ -832,7 +858,6 @@
             atendimentos: { days: 60, column: 'data_hora' },
             condicionais: { days: 60, column: 'created_at' },
             metas: { days: 365, column: 'semana_fim' },
-            metas_mensais: { days: 365, column: 'mes_referencia' },
             metas_semanais: { days: 365, column: 'semana_fim' },
             vendas_loja: { days: 365, column: 'data' }
         };
@@ -894,8 +919,7 @@
             if (table === 'metas') return { id: item.id, loja_id: item.lojaId, vendedor_id: item.userId, semana_inicio: item.weekStart, semana_fim: item.weekEnd, bronze: item.bronze, prata: item.silver, ouro: item.gold, diamante: item.diamond, mes_referencia: `${item.month}-01`, mensal_bronze: item.monthlyBronze, mensal_prata: item.monthlySilver, mensal_ouro: item.monthlyGold, mensal_diamante: item.monthlyDiamond, meta_mensal: item.monthlyDiamond };
             if (table === 'conteudos') return { id: item.id, tipo: item.type, texto: item.text, humor: item.mood || null, ativo: item.active !== false };
             if (table === 'humor_registros') return { loja_id: lojaId, vendedor_id: userId, data: item.date, humor: item.mood, updated_at: item.updatedAt || new Date().toISOString() };
-            if (table === 'metas_mensais') return { id: item.id, loja_id: lojaId, mes_referencia: `${item.month}-01`, valor_total: item.total };
-            if (table === 'metas_semanais') return { id: item.id, loja_id: lojaId, meta_mensal_id: item.monthlyGoalId, nome: item.name, semana_inicio: item.weekStart, semana_fim: item.weekEnd, valor_total: item.total, distribuicao: item.distributions || [] };
+            if (table === 'metas_semanais') return { id: item.id, loja_id: lojaId, nome: item.name, semana_inicio: item.weekStart, semana_fim: item.weekEnd, valor_total: item.total, distribuicao: item.distributions || [] };
             if (table === 'vendas_loja') return { id: item.id, loja_id: item.lojaId || getSession()?.lojaId || null, descricao: item.client || '', valor: Number(item.value || 0), data: item.date };
             if (table === 'produtos') return { id: item.id, nome: item.name, aceita_genero: item.gender === true, ativo: item.active !== false };
             if (table === 'prospeccao_listas') return { id: item.id, loja_id: item.lojaId, owner_id: item.ownerId || null, nome: item.name, dias_disponiveis: item.days || [], contatos: item.contacts || [], mensagens: item.messages || [], tarefa_horario: item.taskTime || null, tarefa_meta_tipo: item.taskTargetMode || 'minimum', tarefa_meta_valor: Number(item.taskTarget || 1), tarefa_vendedores: item.taskVendors || [], created_at: item.createdAt, updated_at: item.updatedAt };
@@ -931,8 +955,7 @@
             if (table === 'metas') return { ...row, lojaId: row.loja_id, userId: row.vendedor_id, weekStart: row.semana_inicio, weekEnd: row.semana_fim, bronze: Number(row.bronze || 0), silver: Number(row.prata || 0), gold: Number(row.ouro || 0), diamond: Number(row.diamante || 0), month: String(row.mes_referencia || '').slice(0, 7), monthlyBronze: Number(row.mensal_bronze ?? 0), monthlySilver: Number(row.mensal_prata ?? 0), monthlyGold: Number(row.mensal_ouro ?? 0), monthlyDiamond: Number(row.mensal_diamante ?? row.meta_mensal ?? 0), monthly: Number(row.mensal_diamante ?? row.meta_mensal ?? 0) };
             if (table === 'conteudos') return { ...row, type: row.tipo, text: row.texto, mood: row.humor || row.mood || '', active: row.ativo !== false };
             if (table === 'humor_registros') return { ...row, userId: row.vendedor_id, date: row.data, mood: row.humor };
-            if (table === 'metas_mensais') return { ...row, lojaId: row.loja_id, month: String(row.mes_referencia || '').slice(0, 7), total: Number(row.valor_total || 0) };
-            if (table === 'metas_semanais') return { ...row, lojaId: row.loja_id, monthlyGoalId: row.meta_mensal_id, name: row.nome, weekStart: row.semana_inicio, weekEnd: row.semana_fim, total: Number(row.valor_total || 0), distributions: row.distribuicao || [] };
+            if (table === 'metas_semanais') return { ...row, lojaId: row.loja_id, name: row.nome, weekStart: row.semana_inicio, weekEnd: row.semana_fim, total: Number(row.valor_total || 0), distributions: row.distribuicao || [] };
             if (table === 'vendas_loja') return { ...row, lojaId: row.loja_id, client: row.descricao, value: Number(row.valor || 0), date: row.data, datetime: `${row.data}T12:00:00`, storeSale: true };
             if (table === 'produtos') return { ...row, name: row.nome ?? row.name, gender: row.aceita_genero ?? row.gender ?? false, active: row.ativo !== false };
             if (table === 'prospeccao_listas') return { ...row, lojaId: row.loja_id, ownerId: row.owner_id || null, name: row.nome ?? row.name, days: row.dias_disponiveis || [], contacts: row.contatos || [], messages: row.mensagens || [], taskTime: row.tarefa_horario || '', taskTargetMode: row.tarefa_meta_tipo || 'minimum', taskTarget: Number(row.tarefa_meta_valor || 1), taskVendors: row.tarefa_vendedores || [], createdAt: row.created_at, updatedAt: row.updated_at };
@@ -1154,13 +1177,6 @@
                 }
             }
 
-            if (table === 'metas_semanais') {
-                const monthlyIds = [...new Set(rows.map(row => row.meta_mensal_id).filter(Boolean))];
-                const monthlyGoals = getMonthlyGoals().filter(goal => monthlyIds.includes(goal.id));
-                if (monthlyGoals.length !== monthlyIds.length) return new Error('A meta mensal selecionada não foi encontrada. Recarregue a página e tente novamente.');
-                const { error } = await sigaSupabase.from('metas_mensais').upsert(monthlyGoals.map(goal => databaseRowFromApp('metas_mensais', goal)));
-                if (error) return error;
-            }
             return null;
         }
 
@@ -1195,7 +1211,6 @@
                 addRequest('condicionais', 'siga-condicionais', ownerColumn || 'vendedor_id', ownerValue);
                 addRequest('vendas_loja', 'siga-vendas-loja', 'loja_id', session.lojaId);
                 addRequest('metas', 'siga-metas', 'vendedor_id', userId);
-                addRequest('metas_mensais', 'siga-metas-mensais', 'loja_id', session.lojaId);
                 addRequest('metas_semanais', 'siga-metas-semanais', 'loja_id', session.lojaId);
                 addRequest('humor_registros', scopedKey('siga-humor-registros'), 'vendedor_id', userId);
                 addRequest('conteudos', 'siga-conteudos');
@@ -1238,7 +1253,7 @@
         }
 
         function getStorageRetentionDays(storageKey) {
-            if (storageKey === 'siga-metas' || storageKey === 'siga-metas-mensais' || storageKey === 'siga-metas-semanais' || storageKey.startsWith('siga-vendas-loja')) return 365;
+            if (storageKey === 'siga-metas' || storageKey === 'siga-metas-semanais' || storageKey.startsWith('siga-vendas-loja')) return 365;
             if (storageKey === 'siga-tarefas' || storageKey.startsWith('siga-tarefas::') || storageKey === 'siga-vendas' || storageKey.startsWith('siga-vendas::') || storageKey === 'siga-atendimentos' || storageKey.startsWith('siga-atendimentos::') || storageKey === 'siga-condicionais' || storageKey.startsWith('siga-condicionais::') || storageKey === 'siga-humor-registros') return 60;
             return null;
         }
@@ -1274,7 +1289,7 @@
         function pruneExpiredProjectData() {
             const retentionKeys = [
                 'siga-tarefas', 'siga-vendas', 'siga-atendimentos', 'siga-condicionais', 'siga-metas',
-                'siga-metas-mensais', 'siga-metas-semanais', 'siga-vendas-loja', 'siga-humor-registros'
+                'siga-metas-semanais', 'siga-vendas-loja', 'siga-humor-registros'
             ];
             const keys = [...new Set([...Object.keys(localStorage), ...retentionKeys])];
             keys.forEach(storageKey => {
@@ -2097,22 +2112,11 @@
                 document.getElementById('manager-task-feedback').textContent = `Tarefa lançada para ${selectedVendors.length} vendedor${selectedVendors.length === 1 ? '' : 'es'}.`;
                 event.target.reset(); document.getElementById('manager-task-repeat-end').value = ''; renderManagerTaskWeekdays(); renderManagerTaskVendors(); renderManagerOverview();
             });
-            document.getElementById('monthly-goal-form').addEventListener('submit', event => {
-                event.preventDefault();
-                const session = getSession();
-                const month = document.getElementById('monthly-goal-month').value;
-                const total = parseBrazilianNumber(document.getElementById('monthly-goal-total').value);
-                const monthlyGoals = getMonthlyGoals();
-                const existing = monthlyGoals.find(item => item.lojaId === session.lojaId && item.month === month);
-                saveMonthlyGoals([...monthlyGoals.filter(item => item.id !== existing?.id), { id: existing?.id || crypto.randomUUID(), lojaId: session.lojaId, month, total }]);
-                renderGoalForm();
-            });
             document.getElementById('weekly-goal-form').addEventListener('submit', event => {
                 event.preventDefault();
                 const session = getSession();
                 const start = document.getElementById('weekly-goal-start').value;
                 const end = document.getElementById('weekly-goal-end').value;
-                const monthId = document.getElementById('weekly-goal-month-select').value || '';
                 const name = document.getElementById('weekly-goal-name').value.trim();
                 const vendors = getUsuarios().filter(item => item.lojaId === session.lojaId && item.role === 'vendedor');
                 const distributions = vendors.map(user => {
@@ -2137,16 +2141,11 @@
                 if (!distributions.length) return document.getElementById('goal-form-feedback').textContent = 'Defina pelo menos um valor de meta para um vendedor.';
                 if (invalidVendor) return document.getElementById('goal-form-feedback').textContent = 'As metas por faixa devem seguir a ordem Bronze ≤ Prata ≤ Ouro ≤ Diamante.';
                 const total = distributions.reduce((sum, item) => sum + Number(item.value || 0), 0);
-                const monthlyGoal = monthId ? getMonthlyGoals().find(item => item.id === monthId) : null;
-                if (monthlyGoal && total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'O valor semanal não pode ser maior que a meta mensal.';
                 const weeklyGoals = getWeeklyGoals();
                 const existing = weeklyGoals.find(item => item.id === document.getElementById('weekly-goal-form').dataset.editingId);
-                const otherWeeksTotal = monthId ? weeklyGoals.filter(item => item.monthlyGoalId === monthId && item.id !== existing?.id).reduce((sum, item) => sum + Number(item.total || 0), 0) : 0;
-                if (monthlyGoal && otherWeeksTotal + total > monthlyGoal.total) return document.getElementById('goal-form-feedback').textContent = 'A soma das semanas não pode ultrapassar a meta mensal.';
-                saveWeeklyGoals([...weeklyGoals.filter(item => item.id !== existing?.id), { id: existing?.id || crypto.randomUUID(), lojaId: session.lojaId, monthlyGoalId: monthId || null, name: name || 'Semana', weekStart: start, weekEnd: end, total, distributions }]);
+                saveWeeklyGoals([...weeklyGoals.filter(item => item.id !== existing?.id), { id: existing?.id || crypto.randomUUID(), lojaId: session.lojaId, monthlyGoalId: null, name: name || 'Semana', weekStart: start, weekEnd: end, total, distributions }]);
                 event.target.reset(); event.target.dataset.editingId = ''; renderGoalForm();
             });
-            ['weekly-goal-month-select', 'weekly-goal-total'].forEach(id => document.getElementById(id).addEventListener('change', renderWeeklyVendors));
             document.getElementById('goal-markers').addEventListener('click', event => {
                 const marker = event.target.closest('[data-goal-tier]');
                 if (!marker) return;
@@ -2161,18 +2160,14 @@
                     const goal = getWeeklyGoals().find(item => item.id === editWeekly.dataset.editWeeklyGoal);
                     if (!goal) return;
                     document.getElementById('weekly-goal-form').dataset.editingId = goal.id;
-                    document.getElementById('weekly-goal-month-select').value = goal.monthlyGoalId;
                     document.getElementById('weekly-goal-name').value = goal.name;
                     document.getElementById('weekly-goal-start').value = goal.weekStart;
                     document.getElementById('weekly-goal-end').value = goal.weekEnd;
-                    document.getElementById('weekly-goal-total').value = goal.total;
                     renderWeeklyVendors();
                     return;
                 }
                 const deleteWeekly = event.target.closest('[data-delete-weekly-goal]');
                 if (deleteWeekly) { if (await siteConfirm('Excluir esta semana?')) { saveWeeklyGoals(getWeeklyGoals().filter(item => item.id !== deleteWeekly.dataset.deleteWeeklyGoal)); renderGoalForm(); } return; }
-                const deleteMonthly = event.target.closest('[data-delete-monthly-goal]');
-                if (deleteMonthly) { if (await siteConfirm('Excluir esta meta mensal e suas semanas?')) { const monthlyId = deleteMonthly.dataset.deleteMonthlyGoal; saveMonthlyGoals(getMonthlyGoals().filter(item => item.id !== monthlyId)); saveWeeklyGoals(getWeeklyGoals().filter(item => item.monthlyGoalId !== monthlyId)); renderGoalForm(); } return; }
             });
         }
 
@@ -2543,8 +2538,7 @@
             const grouped = filtered.reduce((result, sale) => { result[sale.sellerName] = (result[sale.sellerName] || 0) + Number(sale.value || 0); return result; }, {});
             document.getElementById('manager-report-total').textContent = money(filtered.reduce((sum, sale) => sum + Number(sale.value || 0), 0));
             document.getElementById('manager-report-count').textContent = filtered.length;
-            const storeGoals = getMonthlyGoals().filter(goal => goal.lojaId === session?.lojaId && goal.month === getLocalDateKey().slice(0, 7));
-            document.getElementById('manager-store-goal-total').textContent = money(storeGoals.reduce((sum, goal) => sum + Number(goal.total || 0), 0));
+            document.getElementById('manager-store-goal-total').textContent = money(0);
             document.getElementById('manager-report-list').innerHTML = Object.keys(grouped).length ? Object.entries(grouped).map(([name, value]) => `<div class="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"><span class="text-xs font-bold text-slate-700">${escapeHtml(name)}</span><strong class="text-sm font-black text-indigo-600">${money(value)}</strong></div>`).join('') : '<p class="text-xs text-slate-400">Nenhuma venda no período.</p>';
             renderManagerStoreSales();
             renderProductAnalytics();
@@ -2616,8 +2610,6 @@
             renderManagerReport();
         }
 
-        function getMonthlyGoals() { try { const saved = JSON.parse(localStorage.getItem('siga-metas-mensais')); return Array.isArray(saved) ? saved : []; } catch (error) { return []; } }
-        function saveMonthlyGoals(list) { const previous = getMonthlyGoals(); localStorage.setItem('siga-metas-mensais', JSON.stringify(list)); syncStoredList('siga-metas-mensais', list, previous.filter(item => !list.some(next => next.id === item.id)).map(item => item.id)); }
         function getWeeklyGoals() { try { const saved = JSON.parse(localStorage.getItem('siga-metas-semanais')); return Array.isArray(saved) ? saved : []; } catch (error) { return []; } }
         function saveWeeklyGoals(list) { const previous = getWeeklyGoals(); localStorage.setItem('siga-metas-semanais', JSON.stringify(list)); syncStoredList('siga-metas-semanais', list, previous.filter(item => !list.some(next => next.id === item.id)).map(item => item.id)); }
         function getGoals() { return getWeeklyGoals(); }
@@ -2681,15 +2673,7 @@
             }
             section.classList.remove('hidden');
             const today = getLocalDateKey();
-            const month = today.slice(0, 7);
-            const monthlyGoals = getMonthlyGoals().filter(item => item.lojaId === session.lojaId);
-            const monthSelect = document.getElementById('weekly-goal-month-select');
-            const selectedMonthGoal = monthSelect.value;
-            monthSelect.innerHTML = monthlyGoals.map(item => `<option value="${item.id}">${item.month} · ${money(item.total)}</option>`).join('');
-            if (monthlyGoals.some(item => item.id === selectedMonthGoal)) monthSelect.value = selectedMonthGoal;
-            if (!monthSelect.value && monthlyGoals.length) monthSelect.value = monthlyGoals[monthlyGoals.length - 1].id;
-            if (!document.getElementById('monthly-goal-month').value) {
-                document.getElementById('monthly-goal-month').value = month;
+            if (!document.getElementById('weekly-goal-start').value || !document.getElementById('weekly-goal-end').value) {
                 const date = new Date(`${today}T12:00:00`);
                 const day = date.getDay();
                 date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
@@ -2697,9 +2681,9 @@
                 date.setDate(date.getDate() + 6);
                 document.getElementById('weekly-goal-end').value = getLocalDateKey(date);
             }
-            document.getElementById('monthly-goal-total').value = getMonthlyGoals().find(item => item.lojaId === session.lojaId && item.month === document.getElementById('monthly-goal-month').value)?.total || '';
             renderWeeklyVendors();
             renderGoalsLists(session.lojaId);
+            renderStoreGoalSummary();
         }
 
         function renderWeeklyVendors() {
@@ -2727,24 +2711,70 @@
         }
 
         function renderGoalsLists(lojaId) {
-            const monthlyGoals = getMonthlyGoals().filter(goal => goal.lojaId === lojaId);
             const weeklyGoals = getWeeklyGoals().filter(goal => goal.lojaId === lojaId);
             const users = getUsuarios();
             const weeklyList = document.getElementById('weekly-goals-list');
-            const monthlyList = document.getElementById('monthly-goals-list');
-            weeklyList.innerHTML = weeklyGoals.length ? weeklyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-start justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${escapeHtml(goal.name)}</p><p class="mt-1 text-[10px] font-semibold text-slate-500">${goal.weekStart} até ${goal.weekEnd} · ${money(goal.total)}</p><p class="mt-1 text-[10px] text-slate-400">${goal.distributions.map(item => `${escapeHtml(users.find(user => user.id === item.userId)?.name || 'Vendedor')}: Bronze ${money(item.bronze || 0)} · Prata ${money(item.silver || 0)} · Ouro ${money(item.gold || 0)} · Diamante ${money(item.diamond || item.value || 0)}`).join(' · ')}</p></div><div class="flex gap-1"><button type="button" data-edit-weekly-goal="${goal.id}" aria-label="Editar semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weekly-goal="${goal.id}" aria-label="Excluir semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma semana criada.</p>';
-            monthlyList.innerHTML = monthlyGoals.length ? monthlyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-center justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${goal.month}</p><p class="mt-1 text-[10px] font-black text-indigo-600">${money(goal.total)}</p></div><button type="button" data-delete-monthly-goal="${goal.id}" aria-label="Excluir meta mensal" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma meta mensal criada.</p>';
+            weeklyList.innerHTML = weeklyGoals.length ? weeklyGoals.map(goal => `<article class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex items-start justify-between gap-2"><div><p class="text-xs font-black text-slate-700">${escapeHtml(goal.name)}</p><p class="mt-1 text-[10px] font-semibold text-slate-500">${goal.weekStart} até ${goal.weekEnd}</p><p class="mt-1 text-[10px] text-slate-400">${goal.distributions.map(item => `${escapeHtml(users.find(user => user.id === item.userId)?.name || 'Vendedor')}: Bronze ${money(item.bronze || 0)} · Prata ${money(item.silver || 0)} · Ouro ${money(item.gold || 0)} · Diamante ${money(item.diamond || item.value || 0)}`).join(' · ')}</p></div><div class="flex gap-1"><button type="button" data-edit-weekly-goal="${goal.id}" aria-label="Editar semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600"><i data-lucide="pencil" class="h-4 w-4"></i></button><button type="button" data-delete-weekly-goal="${goal.id}" aria-label="Excluir semana" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button></div></div></article>`).join('') : '<p class="text-xs text-slate-400">Nenhuma semana criada.</p>';
             lucide.createIcons();
+        }
+
+        function renderStoreGoalSummary() {
+            const session = getSession();
+            const lojaId = session?.lojaId;
+            const goalSection = document.getElementById('store-goal-summary-section');
+            if (!goalSection || !lojaId) return;
+            const goals = getWeeklyGoals().filter(goal => goal.lojaId === lojaId).sort((first, second) => first.weekStart.localeCompare(second.weekStart));
+            const today = getLocalDateKey();
+            const activeGoal = goals.find(goal => today >= goal.weekStart && today <= goal.weekEnd) || goals.filter(goal => goal.weekStart <= today).at(-1) || goals[0] || null;
+            const totals = { bronze: 0, silver: 0, gold: 0, diamond: 0 };
+            if (activeGoal) {
+                const users = getUsuarios().filter(item => item.lojaId === lojaId && item.role === 'vendedor');
+                users.forEach(user => {
+                    const distribution = (activeGoal.distributions || []).find(item => item.userId === user.id) || {};
+                    totals.bronze += Number(distribution.bronze || 0);
+                    totals.silver += Number(distribution.silver || 0);
+                    totals.gold += Number(distribution.gold || 0);
+                    totals.diamond += Number(distribution.diamond || distribution.value || 0);
+                });
+            }
+            const salesThisWeek = getSales().filter(sale => {
+                if (!activeGoal) return false;
+                return sale.date >= activeGoal.weekStart && sale.date <= activeGoal.weekEnd;
+            }).reduce((sum, sale) => sum + Number(sale.value || 0), 0);
+            const targetTotal = Math.max(0, totals.diamond || Object.values(totals).reduce((sum, value) => sum + Number(value || 0), 0));
+            const progress = targetTotal > 0 ? Math.min(100, (salesThisWeek / targetTotal) * 100) : 0;
+            const timerText = activeGoal ? `${activeGoal.name || 'Semana'} · ${activeGoal.weekStart} até ${activeGoal.weekEnd}` : 'Nenhuma semana ativa';
+            document.getElementById('store-goal-period-label').textContent = timerText;
+            document.getElementById('store-goal-progress-text').textContent = `${Math.round(progress)}%`;
+            document.getElementById('store-goal-progress-fill').style.width = `${Math.min(100, progress)}%`;
+            document.getElementById('store-goal-current-total').textContent = `Realizado: ${money(salesThisWeek)}`;
+            document.getElementById('store-goal-target-total').textContent = `Meta: ${money(targetTotal)}`;
+            document.getElementById('store-goal-bronze-total').textContent = money(totals.bronze);
+            document.getElementById('store-goal-silver-total').textContent = money(totals.silver);
+            document.getElementById('store-goal-gold-total').textContent = money(totals.gold);
+            document.getElementById('store-goal-diamond-total').textContent = money(totals.diamond);
+            if (!activeGoal || !goals.length) {
+                goalSection.classList.add('opacity-80');
+                document.getElementById('store-goal-progress-fill').style.width = '0%';
+                document.getElementById('store-goal-progress-text').textContent = '0%';
+                document.getElementById('store-goal-current-total').textContent = 'Realizado: R$ 0,00';
+                document.getElementById('store-goal-target-total').textContent = 'Meta: R$ 0,00';
+                document.getElementById('store-goal-bronze-total').textContent = money(0);
+                document.getElementById('store-goal-silver-total').textContent = money(0);
+                document.getElementById('store-goal-gold-total').textContent = money(0);
+                document.getElementById('store-goal-diamond-total').textContent = money(0);
+                return;
+            }
+            goalSection.classList.remove('opacity-80');
         }
 
         function goalForCurrentUser() {
             const session = getSession();
             const userId = effectiveUserId();
             const today = getLocalDateKey();
-            const selectedMonth = today.slice(0, 7);
             const weeklyGoals = getWeeklyGoals().filter(goal => goal.distributions?.some(item => item.userId === userId) && goal.lojaId === session?.lojaId).sort((first, second) => first.weekStart.localeCompare(second.weekStart));
             const activeWeekly = weeklyGoals.find(goal => today >= goal.weekStart && today <= goal.weekEnd);
-            return { weekly: activeWeekly || weeklyGoals.filter(goal => goal.weekStart <= today).at(-1) || weeklyGoals[0] || null, monthly: getMonthlyGoals().find(goal => goal.lojaId === session?.lojaId && goal.month === selectedMonth) || null };
+            return { weekly: activeWeekly || weeklyGoals.filter(goal => goal.weekStart <= today).at(-1) || weeklyGoals[0] || null, monthly: null };
         }
 
         function daysBetween(start, end) {
@@ -2803,25 +2833,21 @@
             const goal = goalForCurrentUser();
             const today = getLocalDateKey();
             const weekly = goal.weekly || { total: 0, weekStart: today, weekEnd: today, distributions: [] };
-            const monthly = goal.monthly || { month: today.slice(0, 7), total: 0 };
             const userDistribution = weekly.distributions.find(item => item.userId === effectiveUserId()) || { value: 0, percentage: 0 };
-            const monthlyWeeklyTarget = getWeeklyGoals()
-                .filter(item => monthly.id && item.lojaId === getSession()?.lojaId && item.monthlyGoalId === monthly.id)
-                .reduce((sum, item) => sum + Number(item.distributions?.find(distribution => distribution.userId === effectiveUserId())?.value || 0), 0);
             const sales = getSales();
-            const currentPeriod = window.activeGoalPeriod || 'semana';
+            const currentPeriod = 'semana';
             const weekDays = daysBetween(weekly.weekStart, weekly.weekEnd);
-            const start = currentPeriod === 'dia' ? today : currentPeriod === 'mes' ? `${monthly.month}-01` : weekly.weekStart;
-            const end = currentPeriod === 'dia' ? today : currentPeriod === 'mes' ? `${monthly.month}-${String(new Date(Number(monthly.month.slice(0, 4)), Number(monthly.month.slice(5, 7)), 0).getDate()).padStart(2, '0')}` : weekly.weekEnd;
-            const target = currentPeriod === 'dia' ? Number(userDistribution.value) / weekDays : currentPeriod === 'mes' ? monthlyWeeklyTarget : Number(userDistribution.value);
-            const salesStart = currentPeriod === 'semana' ? rankingDateRange().start : start;
-            const salesEnd = currentPeriod === 'semana' ? rankingDateRange().end : end;
+            const start = weekly.weekStart;
+            const end = weekly.weekEnd;
+            const target = Number(userDistribution.value || 0);
+            const salesStart = rankingDateRange().start;
+            const salesEnd = rankingDateRange().end;
             const total = sales.filter(sale => sale.date >= salesStart && sale.date <= salesEnd).reduce((sum, sale) => sum + Number(sale.value || 0), 0);
-            const goalValues = configuredGoalValues(currentPeriod, weekly, monthly, target, weekDays);
+            const goalValues = configuredGoalValues('semana', weekly, null, target, weekDays);
             const dailyMetrics = calculateDailyGoalMetrics(Number(userDistribution.value || 0), weekly.weekStart, weekly.weekEnd, sales);
             const ticketSales = sales.filter(sale => sale.date >= salesStart && sale.date <= salesEnd);
             const ticketAverage = ticketSales.length ? total / ticketSales.length : 0;
-            return { goal: goalValues, target: currentPeriod === 'dia' ? dailyMetrics.adjustedDaily : target, total, ticketAverage, dailyMetrics, weeklyTarget: Number(userDistribution.value || 0), start: currentPeriod === 'semana' ? salesStart : start, end: currentPeriod === 'semana' ? salesEnd : end };
+            return { goal: goalValues, target, total, ticketAverage, dailyMetrics, weeklyTarget: Number(userDistribution.value || 0), start: salesStart, end: salesEnd };
         }
 
         function renderGoalMarkers(goal) {
@@ -2846,7 +2872,7 @@
             const data = currentGoalData();
             const goal = data.goal;
             const percent = Math.min(100, data.total / Math.max(1, Number(goal.diamond || 0)) * 100);
-            document.getElementById('period-title').textContent = window.activeGoalPeriod === 'dia' ? 'Meta Diária' : window.activeGoalPeriod === 'mes' ? 'Meta Mensal' : 'Meta Semanal';
+            document.getElementById('period-title').textContent = 'Meta Semanal';
             document.getElementById('period-date').textContent = formatGoalPeriodDate(window.activeGoalPeriod, data.start, data.end);
             document.getElementById('total-vendas').textContent = money(data.total);
             document.getElementById('meta-valor').textContent = money(data.target);
@@ -3512,6 +3538,7 @@
             if (!document.getElementById('conditional-page').classList.contains('hidden')) renderConditionals();
             if (!document.getElementById('prospecting-page').classList.contains('hidden')) renderProspectingPage();
             if (document.getElementById('tasks-page').classList.contains('active')) renderTasksByDate(currentSelectedDate);
+            if (!document.getElementById('manager-goals-page').classList.contains('hidden')) renderStoreGoalSummary();
             updateNavigationNotifications();
         }
 
