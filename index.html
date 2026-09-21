@@ -3236,11 +3236,12 @@
             const existing = new Set(tasks.map(task => `${task.seriesId || task.id}|${task.date}`));
             series.forEach(({ task, lastDate }) => {
                 const start = new Date(`${lastDate}T12:00:00`);
-                if (start > monthEnd) return;
-                const end = new Date(monthEnd);
+                const end = task.repeatEndDate ? new Date(`${task.repeatEndDate}T12:00:00`) : new Date(monthEnd);
+                if (start > (task.repeatEndDate ? new Date(`${task.repeatEndDate}T12:00:00`) : monthEnd)) return;
                 for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
                     if (!task.repeatDays.includes(cursor.getDay())) continue;
                     const date = getLocalDateKey(cursor);
+                    if (task.repeatEndDate && date > task.repeatEndDate) continue;
                     const key = `${task.seriesId}|${date}`;
                     if (existing.has(key)) continue;
                     existing.add(key);
@@ -3293,9 +3294,9 @@
             return taskDateValue(task) < getLocalDateKey();
         }
 
-        function buildRecurringTaskDateSet(tasks, title, time, minDate = null) {
+        function buildRecurringTaskDateSet(tasks, title, time, minDate = null, endDate = null) {
             return new Set(tasks
-                .filter(task => task.title === title && task.time === time && (!minDate || task.date >= minDate))
+                .filter(task => task.title === title && task.time === time && (!minDate || task.date >= minDate) && (!endDate || !task.date || task.date <= endDate))
                 .map(task => task.date));
         }
 
@@ -3304,17 +3305,19 @@
             const existingDates = options.existingDates || new Set();
             const owner = options.owner || currentTaskOwnerRole();
             const userId = options.userId || effectiveUserId();
+            const endDate = options.endDate || null;
             const tasks = [];
             const start = new Date(`${startDate}T12:00:00`);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             if (start < today) start.setTime(today.getTime());
-            const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const monthEnd = endDate ? new Date(`${endDate}T12:00:00`) : new Date(today.getFullYear(), today.getMonth() + 1, 0);
             const cursor = new Date(start);
             for (; cursor <= monthEnd; cursor.setDate(cursor.getDate() + 1)) {
                 if (!repeatDays.includes(cursor.getDay())) continue;
                 const dateKey = getLocalDateKey(cursor);
                 if (dateKey < startDate) continue;
+                if (endDate && dateKey > endDate) continue;
                 if (existingDates.has(dateKey)) continue;
                 tasks.push({
                     id: crypto.randomUUID(),
@@ -3331,6 +3334,7 @@
                     date: dateKey,
                     seriesId,
                     repeatDays,
+                    repeatEndDate: endDate,
                     lojaId: options.lojaId || getSession()?.lojaId || null
                 });
             }
@@ -4241,6 +4245,9 @@
             managerEditingTask = null;
             pendingAddDate = null;
             document.getElementById('new-task-title').textContent = 'Adicionar tarefa';
+            document.getElementById('new-task-form').reset();
+            document.getElementById('task-repeat-options').classList.add('hidden');
+            document.getElementById('task-repeat-end-input').value = '';
         }
 
         function setupModalBackdropClose() {
