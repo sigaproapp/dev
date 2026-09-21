@@ -300,29 +300,16 @@
             return;
         }
 
-        const maxScore = Math.max(1, ...ranking.map(item => Number(item.total) || 0));
-        const barColors = ['bg-yellow-400', 'bg-slate-300', 'bg-indigo-600'];
-        const borderColors = ['border-yellow-400', 'border-slate-300', 'border-indigo-400'];
-        const textSizes = ['text-3xl', 'text-xl', 'text-xl'];
+        const colors = { 1: ['h-24', 'bg-yellow-400', 'border-yellow-400', 'text-3xl'], 2: ['h-16', 'bg-slate-300', 'border-slate-300', 'text-xl'], 3: ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'] };
+        const podium = ranking.length === 3 ? [ranking[1], ranking[0], ranking[2]] : ranking.length === 2 ? [ranking[1], ranking[0]] : ranking;
 
-        target.innerHTML = `
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:0.75rem;width:100%;">
-                ${ranking.map((seller, index) => {
-                    const position = index + 1;
-                    const barHeight = Math.max(42, Math.round((Number(seller.total) || 0) / maxScore * 100));
-                    const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
-                    const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
-                    return `<div style="min-width:0;display:flex;flex-direction:column;align-items:center;">
-                        <div class="relative">
-                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColors[index]} object-cover shadow-sm">${crown}
-                        </div>
-                        <p class="mb-1 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p>
-                        <p class="mb-2 text-[10px] font-black text-rose-600">${seller.total} acertos</p>
-                        <div class="flex w-full items-end justify-center rounded-t-2xl ${barColors[index]} font-black text-white ${textSizes[index]}" style="height:${barHeight}px; min-height:${barHeight}px;">${position}</div>
-                    </div>`;
-                }).join('')}
-            </div>
-        `;
+        target.innerHTML = podium.map(seller => {
+            const position = ranking.indexOf(seller) + 1;
+            const [height, barColor, borderColor, numberSize] = colors[position] || ['h-12', 'bg-indigo-600', 'border-indigo-400', 'text-xl'];
+            const avatarSize = position === 1 ? 'h-14 w-14' : 'h-10 w-10';
+            const crown = position === 1 ? '<i data-lucide="crown" class="absolute -top-4 left-1/2 h-5 w-5 -translate-x-1/2 text-yellow-500"></i>' : '';
+            return `<div class="flex min-w-0 flex-1 flex-col items-center"><div class="relative"><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=6366f1&color=fff" alt="${esc(seller.name)}" class="${avatarSize} mb-2 rounded-full border-2 ${borderColor} object-cover shadow-sm">${crown}</div><p class="mb-2 max-w-full truncate text-center text-[10px] font-black text-slate-600">${esc(seller.name)}</p><div class="${height} flex w-full items-center justify-center rounded-t-2xl ${barColor} font-black text-white ${numberSize}">${position}</div></div>`;
+        }).join('');
         window.lucide?.createIcons();
     }
 
