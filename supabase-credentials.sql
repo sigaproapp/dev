@@ -215,9 +215,40 @@ create policy metas_anon_all
     using (true)
     with check (true);
 
+create table if not exists public.metas_mensais (
+    id uuid primary key default gen_random_uuid(),
+    loja_id uuid not null references public.lojas(id) on delete cascade,
+    mes_referencia date not null,
+    valor_total numeric(12,2) not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+alter table public.metas_mensais
+    add column if not exists loja_id uuid;
+alter table public.metas_mensais
+    add column if not exists mes_referencia date;
+alter table public.metas_mensais
+    add column if not exists valor_total numeric(12,2) default 0;
+alter table public.metas_mensais
+    add column if not exists created_at timestamptz default now();
+alter table public.metas_mensais
+    add column if not exists updated_at timestamptz default now();
+
+create index if not exists metas_mensais_loja_mes_idx on public.metas_mensais (loja_id, mes_referencia);
+
+grant select, insert, update, delete on public.metas_mensais to anon, authenticated;
+alter table public.metas_mensais enable row level security;
+drop policy if exists metas_mensais_anon_all on public.metas_mensais;
+create policy metas_mensais_anon_all
+    on public.metas_mensais for all to anon, authenticated
+    using (true)
+    with check (true);
+
 create table if not exists public.metas_semanais (
     id uuid primary key default gen_random_uuid(),
     loja_id uuid not null references public.lojas(id) on delete cascade,
+    meta_mensal_id uuid references public.metas_mensais(id) on delete set null,
     nome text not null default '',
     semana_inicio date not null,
     semana_fim date not null,
@@ -229,6 +260,8 @@ create table if not exists public.metas_semanais (
 
 alter table public.metas_semanais
     add column if not exists loja_id uuid;
+alter table public.metas_semanais
+    add column if not exists meta_mensal_id uuid;
 alter table public.metas_semanais
     add column if not exists nome text default '';
 alter table public.metas_semanais
@@ -243,6 +276,8 @@ alter table public.metas_semanais
     add column if not exists created_at timestamptz default now();
 alter table public.metas_semanais
     add column if not exists updated_at timestamptz default now();
+
+create index if not exists metas_semanais_loja_data_idx on public.metas_semanais (loja_id, semana_inicio, semana_fim);
 
 grant select, insert, update, delete on public.metas_semanais to anon, authenticated;
 alter table public.metas_semanais enable row level security;

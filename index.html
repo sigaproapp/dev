@@ -2741,7 +2741,7 @@
             return [...merged.values()].sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
         }
 
-        function saveWeeklyGoals(list) {
+        async function saveWeeklyGoals(list) {
             const normalizedList = (Array.isArray(list) ? list : []).map(item => normalizeWeeklyGoal(item)).filter(Boolean);
             const previous = getWeeklyGoals();
             localStorage.setItem('siga-metas-semanais', JSON.stringify(normalizedList));
@@ -2767,6 +2767,26 @@
             );
             localStorage.setItem('siga-metas', JSON.stringify(mergedLegacy));
             syncStoredList('siga-metas', mergedLegacy, previousLegacy.filter(item => !mergedLegacy.some(next => next.id === item.id)).map(item => item.id));
+
+            try {
+                if (normalizedList.length) {
+                    const weeklyRows = normalizedList.map(item => databaseRowFromApp('metas_semanais', item));
+                    const { error: weeklyError } = await sigaSupabase.from('metas_semanais').upsert(weeklyRows, { onConflict: 'id' });
+                    if (weeklyError) {
+                        console.warn('Falha ao salvar metas_semanais no Supabase:', weeklyError.message);
+                    }
+                }
+
+                if (mergedLegacy.length) {
+                    const legacyRows = mergedLegacy.map(item => databaseRowFromApp('metas', item));
+                    const { error: legacyError } = await sigaSupabase.from('metas').upsert(legacyRows, { onConflict: 'id' });
+                    if (legacyError) {
+                        console.warn('Falha ao salvar metas do vendedor no Supabase:', legacyError.message);
+                    }
+                }
+            } catch (error) {
+                console.warn('Sincronização direta de metas falhou:', error);
+            }
         }
 
         function getGoals() { return getWeeklyGoals(); }
