@@ -2832,8 +2832,8 @@
             const userId = effectiveUserId();
             const userDistribution = (weekly?.distributions || []).find(item => item.userId === userId) || {};
             const legacy = readStoredList('siga-metas').find(item => item.lojaId === getSession()?.lojaId && item.userId === userId && item.weekStart === weekly.weekStart);
-            const weeklySource = weekly.bronze || weekly.silver || weekly.gold || weekly.diamond ? weekly : legacy;
-            const monthlySource = monthly.bronze || monthly.silver || monthly.gold || monthly.diamond ? monthly : legacy;
+            const weeklySource = weekly?.bronze || weekly?.silver || weekly?.gold || weekly?.diamond ? weekly : legacy;
+            const monthlySource = monthly?.bronze || monthly?.silver || monthly?.gold || monthly?.diamond ? monthly : legacy;
             const source = period === 'mes' ? monthlySource : weeklySource;
             const prefix = period === 'mes' && source === legacy ? 'monthly' : '';
             const readLevel = level => {
@@ -3746,7 +3746,10 @@
             const date = new Date(`${today}T12:00:00`);
             const day = date.getDay();
             date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
-            document.getElementById('monthly-goal-month').value = today.slice(0, 7);
+            const monthInput = document.getElementById('monthly-goal-month');
+            if (monthInput) {
+                monthInput.value = today.slice(0, 7);
+            }
             document.getElementById('weekly-goal-start').value = getLocalDateKey(date);
             date.setDate(date.getDate() + 6);
             document.getElementById('weekly-goal-end').value = getLocalDateKey(date);
