@@ -32,8 +32,6 @@
         .date-carousel::-webkit-scrollbar { display: none; }
         .observation-preview { max-height: 2.8em; overflow: hidden; cursor: pointer; }
         .observation-preview.observation-expanded { max-height: none; }
-        #sync-error { position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 100; display: none; }
-        #site-toast { position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 110; display: none; }
         #site-dialog { position: fixed; inset: 0; z-index: 120; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.42); backdrop-filter: blur(6px); }
         #site-dialog.is-open { display: flex; }
         :root { --surface: #ffffff; --canvas: #f7f9fc; --line: #e7ebf2; --ink: #172033; --muted: #718096; --brand: #4f46e5; }
@@ -102,8 +100,6 @@
     </style>
 </head>
 <body class="bg-[#FBFDFF] text-slate-900 min-h-screen pb-28">
-    <div id="sync-error" class="rounded-xl bg-red-600 px-4 py-3 text-xs font-bold text-white shadow-xl" role="alert"></div>
-    <div id="site-toast" class="rounded-xl bg-slate-800 px-4 py-3 text-xs font-bold text-white shadow-xl" role="status" aria-live="polite"></div>
     <div id="site-dialog" role="dialog" aria-modal="true" aria-labelledby="site-dialog-title">
         <div class="w-full max-w-md rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-2xl">
             <div class="mb-5 flex items-start gap-3"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><i data-lucide="message-circle-question" class="h-5 w-5"></i></div><div><h2 id="site-dialog-title" class="text-base font-black text-slate-800"></h2><p id="site-dialog-message" class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-500"></p></div></div>

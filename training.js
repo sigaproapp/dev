@@ -124,7 +124,14 @@
         
         window.lucide?.createIcons();
         const trainingPage = document.getElementById('training-page');
-        if (trainingPage) { trainingPage.style.width = 'min(calc(100% - 1.25rem), 64rem)'; trainingPage.style.paddingLeft = '0'; trainingPage.style.paddingRight = '0'; }
+        const managerTrainingPage = document.getElementById('manager-training-page');
+        [trainingPage, managerTrainingPage].filter(Boolean).forEach(page => {
+            page.style.width = 'min(100%, 64rem)';
+            page.style.maxWidth = '64rem';
+            page.style.margin = '0 auto';
+            page.style.paddingLeft = '0';
+            page.style.paddingRight = '0';
+        });
         const openSeller = () => { document.getElementById('fab-button')?.classList.add('hidden'); openPage('training-page'); renderList(); renderTrainingRanking('day'); };
         button.onclick = openSeller; desktopButton.onclick = openSeller; managerButton.onclick = () => { document.getElementById('fab-button')?.classList.add('hidden'); openPage('manager-training-page'); renderManager(); };
     }
