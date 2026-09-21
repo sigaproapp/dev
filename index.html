@@ -364,7 +364,7 @@
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Realizado</p>
-                    <p id="total-vendas" class="text-3xl font-black text-indigo-600 tabular-nums">R$ 12.450</p>
+                    <p id="total-vendas" class="text-3xl font-black text-indigo-600 tabular-nums">R$ 0,00</p>
                 </div>
             </div>
 
@@ -966,7 +966,16 @@
 
         function publicProfileFromRow(row) {
             const { password, senha, password_hash, ...profile } = row;
-            return { ...profile, lojaId: row.loja_id ?? row.lojaId, name: row.nome ?? row.name, role: row.cargo ?? row.funcao ?? row.role, username: row.username ?? row.login, slug: row.slug, fullSlug: row.full_slug ?? row.link_slug ?? row.fullSlug, createdAt: row.created_at ?? row.criado_em ?? row.createdAt };
+            return {
+                ...profile,
+                lojaId: row.loja_id ?? row.lojaId,
+                name: row.nome ?? row.name,
+                role: normalizeUserRole(row.cargo ?? row.funcao ?? row.role),
+                username: row.username ?? row.login,
+                slug: row.slug,
+                fullSlug: row.full_slug ?? row.link_slug ?? row.fullSlug,
+                createdAt: row.created_at ?? row.criado_em ?? row.createdAt
+            };
         }
 
         async function saveProfileCredentials(profile, password = '') {
@@ -1463,14 +1472,20 @@
             try {
                 const saved = JSON.parse(localStorage.getItem(usuariosStorageKey));
                 if (!Array.isArray(saved)) return [];
-                const sanitized = saved.map(({ password, senha, passwordHash, ...profile }) => profile);
+                const sanitized = saved.map(({ password, senha, passwordHash, ...profile }) => ({
+                    ...profile,
+                    role: normalizeUserRole(profile.role)
+                }));
                 if (JSON.stringify(saved) !== JSON.stringify(sanitized)) localStorage.setItem(usuariosStorageKey, JSON.stringify(sanitized));
                 return sanitized;
             } catch (error) { return []; }
         }
         function saveUsuarios(list) {
             const previous = getUsuarios();
-            const publicProfiles = list.map(({ password, senha, passwordHash, ...profile }) => profile);
+            const publicProfiles = list.map(({ password, senha, passwordHash, ...profile }) => ({
+                ...profile,
+                role: normalizeUserRole(profile.role)
+            }));
             localStorage.setItem(usuariosStorageKey, JSON.stringify(publicProfiles));
             syncStoredList(usuariosStorageKey, publicProfiles, previous.filter(item => !publicProfiles.some(next => next.id === item.id)).map(item => item.id));
         }
@@ -1593,18 +1608,32 @@
             callback(success);
         }
 
+        function normalizeUserRole(value) {
+            const normalized = String(value ?? '').trim().toLowerCase();
+            if (!normalized) return '';
+            const compact = normalized.normalize('NFD').replace(/[^a-z]/g, '');
+            if (compact === 'gerente') return 'gerente';
+            if (compact === 'vendedor') return 'vendedor';
+            return normalized;
+        }
+
         function getSession() {
             try {
                 const session = JSON.parse(localStorage.getItem(sessionStorageName));
-                if (!session?.lojaId || isSupabaseUuid(session.lojaId)) return session;
+                if (!session) return null;
+                const normalizedSession = {
+                    ...session,
+                    role: normalizeUserRole(session.role)
+                };
+                if (!normalizedSession?.lojaId || isSupabaseUuid(normalizedSession.lojaId)) return normalizedSession;
                 const validStores = getLojas().filter(store => isSupabaseUuid(store.id));
-                if (validStores.length !== 1) return session;
-                const repairedSession = { ...session, lojaId: validStores[0].id };
+                if (validStores.length !== 1) return normalizedSession;
+                const repairedSession = { ...normalizedSession, lojaId: validStores[0].id };
                 localStorage.setItem(sessionStorageName, JSON.stringify(repairedSession));
                 return repairedSession;
             } catch (error) { return null; }
         }
-        function saveSession(session) { localStorage.setItem(sessionStorageName, JSON.stringify(session)); }
+        function saveSession(session) { localStorage.setItem(sessionStorageName, JSON.stringify({ ...session, role: normalizeUserRole(session?.role) })); }
         function clearSession() { localStorage.removeItem(sessionStorageName); sigaSupabase.auth.signOut(); }
 
         function effectiveUserId() {
@@ -2871,25 +2900,26 @@
         function renderGoalCard() {
             const data = currentGoalData();
             const goal = data.goal;
-            const percent = Math.min(100, data.total / Math.max(1, Number(goal.diamond || 0)) * 100);
+            const target = Number(goal.diamond || data.target || 0);
+            const percent = target > 0 ? Math.min(100, data.total / target * 100) : 0;
             document.getElementById('period-title').textContent = 'Meta Semanal';
             document.getElementById('period-date').textContent = formatGoalPeriodDate(window.activeGoalPeriod, data.start, data.end);
             document.getElementById('total-vendas').textContent = money(data.total);
-            document.getElementById('meta-valor').textContent = money(data.target);
-            document.getElementById('falta-valor').textContent = money(Math.max(0, data.target - data.total));
+            document.getElementById('meta-valor').textContent = money(target || data.target || 0);
+            document.getElementById('falta-valor').textContent = money(Math.max(0, (target || data.target || 0) - data.total));
             document.getElementById('ticket-medio').innerHTML = `${money(data.ticketAverage)} <i data-lucide="trending-up" class="h-3 w-3"></i>`;
             const metrics = data.dailyMetrics;
-            const statusMessage = data.weeklyTarget <= 0
+            const statusMessage = (target || data.target || 0) <= 0
                 ? 'Nenhuma meta semanal foi configurada para este vendedor.'
                 : metrics.remainingDays === 0
-                ? `Semana encerrada: ${money(metrics.realized)} realizados de ${money(data.weeklyTarget)}.`
+                ? `Semana encerrada: ${money(metrics.realized)} realizados de ${money(target || data.target || 0)}.`
                 : metrics.adjustedDaily > metrics.originalDaily
                     ? `Abaixo do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`
                     : `Acima do ritmo: meta original ${money(metrics.originalDaily)} · nova meta diária ${money(metrics.adjustedDaily)}. Ticket atual ${money(metrics.currentTicket)} · necessário ${money(metrics.requiredTicket)}.`;
             document.getElementById('goal-status-message').textContent = statusMessage;
             document.getElementById('progress-fill').style.width = `${percent}%`;
             const badge = document.getElementById('badge-nivel');
-            const tier = data.total >= Number(goal.diamond || 0) ? ['Diamante', 'tier-diamond'] : goal.gold > 0 && data.total >= Number(goal.gold) ? ['Ouro', 'tier-gold'] : goal.silver > 0 && data.total >= Number(goal.silver) ? ['Prata', 'tier-silver'] : goal.bronze > 0 && data.total >= Number(goal.bronze) ? ['Bronze', 'tier-bronze'] : null;
+            const tier = (target || data.target || 0) <= 0 ? null : data.total >= Number(goal.diamond || 0) ? ['Diamante', 'tier-diamond'] : goal.gold > 0 && data.total >= Number(goal.gold) ? ['Ouro', 'tier-gold'] : goal.silver > 0 && data.total >= Number(goal.silver) ? ['Prata', 'tier-silver'] : goal.bronze > 0 && data.total >= Number(goal.bronze) ? ['Bronze', 'tier-bronze'] : null;
             badge.className = tier ? `text-[10px] text-white font-black px-3 py-1 rounded-full uppercase ${tier[1]}` : 'hidden';
             if (tier) badge.textContent = tier[0];
             renderGoalMarkers(goal);
