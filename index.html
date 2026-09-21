@@ -2670,8 +2670,13 @@
             renderManagerReport();
         }
 
+        function goalEntryUserId(entry, fallbackUserId = null) {
+            const rawUserId = entry?.userId ?? entry?.vendedor_id ?? entry?.vendorId ?? entry?.user_id ?? entry?.sellerId ?? entry?.vendedorId ?? entry?.responsavel_id ?? fallbackUserId ?? null;
+            return rawUserId == null || rawUserId === '' ? null : String(rawUserId);
+        }
+
         function normalizeGoalDistribution(distribution = {}, fallbackUserId = null) {
-            const userId = distribution.userId ?? distribution.vendedor_id ?? distribution.vendorId ?? distribution.user_id ?? fallbackUserId ?? null;
+            const userId = goalEntryUserId(distribution, fallbackUserId);
             return {
                 ...distribution,
                 userId,
@@ -2685,14 +2690,14 @@
 
         function normalizeWeeklyGoal(goal, fallbackUserId = null) {
             if (!goal || typeof goal !== 'object') return null;
-            const distributions = Array.isArray(goal.distributions)
+            const rawDistributions = Array.isArray(goal.distributions)
                 ? goal.distributions
                 : Array.isArray(goal.distribuicao)
                     ? goal.distribuicao
                     : Array.isArray(goal.items)
                         ? goal.items
                         : [];
-            const normalizedDistributions = distributions.map(item => normalizeGoalDistribution(item, fallbackUserId ?? goal.userId ?? goal.vendedor_id ?? goal.vendorId ?? null));
+            const normalizedDistributions = rawDistributions.map(item => normalizeGoalDistribution(item, fallbackUserId ?? goal.userId ?? goal.vendedor_id ?? goal.vendorId ?? goal.user_id ?? null));
             return {
                 ...goal,
                 id: goal.id || `${goal.lojaId || 'loja'}:${goal.weekStart || goal.semana_inicio || Date.now()}`,
@@ -2730,7 +2735,7 @@
             [...weeklyGoals, ...legacyGoals].forEach(goal => {
                 const key = goal.id || `${goal.lojaId}:${goal.weekStart}:${goal.weekEnd}`;
                 const current = merged.get(key) || { ...goal, distributions: [] };
-                const byUser = new Map([...current.distributions, ...goal.distributions].map(item => [String(item.userId), item]));
+                const byUser = new Map([...current.distributions, ...goal.distributions].map(item => [String(goalEntryUserId(item) || item.userId || item.vendedor_id || item.vendorId || ''), item]));
                 merged.set(key, { ...current, ...goal, distributions: [...byUser.values()] });
             });
             return [...merged.values()].sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
@@ -2769,8 +2774,9 @@
         function weeklyGoalsForCurrentUser() {
             const session = getSession();
             const userId = effectiveUserId();
+            const normalizedUserId = userId ? String(userId) : null;
             return getWeeklyGoals()
-                .filter(goal => goal.lojaId === session?.lojaId && goal.distributions?.some(item => String(item.userId) === String(userId)))
+                .filter(goal => goal.lojaId === session?.lojaId && goal.distributions?.some(item => String(goalEntryUserId(item) || item.userId || '').trim() === normalizedUserId))
                 .sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
         }
 
@@ -2931,7 +2937,8 @@
             const session = getSession();
             const userId = effectiveUserId();
             const today = getLocalDateKey();
-            const weeklyGoals = getWeeklyGoals().filter(goal => goal.distributions?.some(item => item.userId === userId) && goal.lojaId === session?.lojaId).sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
+            const normalizedUserId = userId ? String(userId) : null;
+            const weeklyGoals = getWeeklyGoals().filter(goal => goal.lojaId === session?.lojaId && goal.distributions?.some(item => String(goalEntryUserId(item) || item.userId || '').trim() === normalizedUserId)).sort((first, second) => (first.weekStart || '').localeCompare(second.weekStart || ''));
             const activeWeekly = resolveActiveWeeklyGoal(weeklyGoals, today);
             return { weekly: activeWeekly || weeklyGoals[0] || null, monthly: null };
         }
@@ -2992,7 +2999,8 @@
             const goal = goalForCurrentUser();
             const today = getLocalDateKey();
             const weekly = goal.weekly || { total: 0, weekStart: today, weekEnd: today, distributions: [] };
-            const userDistribution = weekly.distributions.find(item => item.userId === effectiveUserId()) || { value: 0, percentage: 0 };
+            const userId = effectiveUserId();
+            const userDistribution = weekly.distributions.find(item => String(goalEntryUserId(item) || item.userId || '').trim() === String(userId || '')) || { value: 0, percentage: 0 };
             const sales = getSales();
             const currentPeriod = 'semana';
             const weekDays = daysBetween(weekly.weekStart, weekly.weekEnd);
