@@ -64,7 +64,7 @@
         
         document.getElementById('app-shell').insertAdjacentHTML('beforeend', `
             <section id="training-page" class="hidden mx-auto w-[min(100%-2rem,64rem)] space-y-6 p-4">
-                <div><h2 class="text-2xl font-black text-slate-800">Treinamentos</h2><p class="mt-1 text-xs font-medium text-slate-500">Conclua um conteúdo de cada treinamento para liberar a enquete.</p></div>
+                <div class="flex items-center gap-3"><button type="button" data-back-dashboard aria-label="Voltar ao início" class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"><i data-lucide="arrow-left" class="h-4 w-4"></i></button><div><h2 class="text-2xl font-black text-slate-800">Treinamentos</h2><p class="mt-1 text-xs font-medium text-slate-500">Conclua um conteúdo de cada treinamento para liberar a enquete.</p></div></div>
                 <div id="training-list" class="space-y-4"></div>
                 <section id="training-player" class="hidden rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-3">
@@ -96,7 +96,7 @@
                 </section>
             </section>
             <section id="manager-training-page" class="hidden mx-auto w-[min(100%-2rem,64rem)] space-y-6 p-4">
-                <div><h2 class="text-2xl font-black text-slate-800">Gestão de treinamentos</h2><p class="mt-1 text-xs font-medium text-slate-500">Organize módulos e publique os conteúdos da equipe.</p></div>
+                <div class="flex items-center gap-3"><button type="button" data-back-dashboard aria-label="Voltar ao início" class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"><i data-lucide="arrow-left" class="h-4 w-4"></i></button><div><h2 class="text-2xl font-black text-slate-800">Gestão de treinamentos</h2><p class="mt-1 text-xs font-medium text-slate-500">Organize módulos e publique os conteúdos da equipe.</p></div></div>
                 <form id="module-form" class="flex gap-2 rounded-[2rem] border border-slate-100 bg-white p-5"><input id="module-title" required placeholder="Nome do módulo" class="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm"><button type="submit" class="rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-black text-white">Adicionar módulo</button></form>
                 <form id="training-form" class="grid gap-3 rounded-[2rem] border border-slate-100 bg-white p-5">
                     <input type="hidden" id="training-editing-id">
