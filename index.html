@@ -1624,9 +1624,9 @@
         function normalizeUserRole(value) {
             const normalized = String(value ?? '').trim().toLowerCase();
             if (!normalized) return '';
-            const compact = normalized.normalize('NFD').replace(/[^a-z]/g, '');
-            if (compact === 'gerente' || compact === 'manager') return 'gerente';
-            if (compact === 'vendedor' || compact === 'seller') return 'vendedor';
+            const compact = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+            if (['gerente', 'gerenta', 'manager', 'managers'].includes(compact)) return 'gerente';
+            if (['vendedor', 'vendedora', 'seller', 'sellers'].includes(compact)) return 'vendedor';
             return normalized;
         }
 
